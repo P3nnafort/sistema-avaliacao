@@ -290,4 +290,5 @@ def salvar_resultado():
 
 if __name__ == '__main__':
     carregar_csv()
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Usa a porta do Render ou 5000 localmente
+    app.run(host="0.0.0.0", port=port, debug=True)
