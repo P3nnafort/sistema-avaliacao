@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultados - Casa da Avaliação</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+            z-index: 10; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+            z-index: 10; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 800px; 
+            width: 100%; 
+        }
+        .filters { 
+            margin-bottom: 10px; 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap; 
+        }
+        select, button { 
+            margin: 5px; 
+            padding: 5px; 
+            font-size: 12px; 
+        }
+        .counters { 
+            margin-bottom: 10px; 
+            font-size: 14px; 
+        }
+        .table-container { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin: 20px 0; 
+        }
+        table { 
+            width: auto; 
+            min-width: 100%; 
+            border-collapse: collapse; 
+            font-size: 10px; 
+        }
+        th, td { 
+            border: 1px solid black; 
+            padding: 6px; 
+            white-space: nowrap; 
+        }
+    </style>
+    <!-- Incluindo SheetJS via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Resultados - Casa da Avaliação</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <div class="filters">
+            <select id="filtroUnidade" onchange="atualizarFiltros()">
+                <option value="">Selecione Unidade</option>
+            </select>
+            <select id="filtroEtapa" onchange="atualizarFiltros()">
+                <option value="">Selecione Etapa</option>
+            </select>
+            <select id="filtroTurma" onchange="carregarResultadosFiltrados()" disabled>
+                <option value="">Selecione Turma</option>
+            </select>
+        </div>
+        <div class="counters">
+            <span id="contadorFizeram">Alunos que fizeram: 0</span> | 
+            <span id="contadorAusentes">Alunos ausentes: 0</span>
+        </div>
+        <button onclick="exportarParaExcel()">Exportar para Excel</button>
+        <div class="table-container">
+            <table id="tabelaResultados">
+                <thead id="cabecalhoResultados"></thead>
+                <tbody id="dadosResultados"></tbody>
+            </table>
+        </div>
+        <button onclick="window.location.href='/casa_avaliacao.html'">Voltar</button>
+    </div>
+
+    <script>
+        let maxQuestoes = 0;
+        let cpfAtual = "";
+        let unidadesDisponiveis = [];
+        let etapasDisponiveis = [];
+        let turmasDisponiveis = [];
+        let resultadosAtuais = []; // Armazena os resultados pra exportação
+
+        async function carregarResultadosFiltrados() {
+            const urlParams = new URLSearchParams(window.location.search);
+            cpfAtual = urlParams.get("cpf");
+            const unidade = document.getElementById("filtroUnidade").value;
+            const etapa = document.getElementById("filtroEtapa").value;
+            const turma = document.getElementById("filtroTurma").value;
+
+            try {
+                let url = `http://127.0.0.1:5000/resultados_casa?cpf=${cpfAtual}`;
+                if (unidade) url += `&unidade=${encodeURIComponent(unidade)}`;
+                if (etapa) url += `&etapa=${etapa}`;
+                if (turma && etapa) url += `&turma=${turma}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                unidadesDisponiveis = data.unidades;
+                etapasDisponiveis = data.etapas;
+                turmasDisponiveis = data.turmas;
+                atualizarFiltros();
+
+                maxQuestoes = Math.max(...data.resultados.map(r => Object.keys(r.respostas).length), 0);
+                resultadosAtuais = data.resultados; // Armazena pra exportação
+
+                const thead = document.getElementById("cabecalhoResultados");
+                let cabecalho = "<tr><th>Matrícula</th><th>Nome</th><th>Unidade</th><th>Etapa</th><th>Turma</th>";
+                for (let i = 0; i < maxQuestoes; i++) {
+                    cabecalho += `<th>Q${i + 1}</th>`;
+                }
+                cabecalho += "<th>Acertos/Total (%) | LP (%) | Mat (%)</th></tr>";
+                thead.innerHTML = cabecalho;
+
+                const tbody = document.getElementById("dadosResultados");
+                let html = "";
+                data.resultados.forEach(resultado => {
+                    html += "<tr>";
+                    html += `<td>${resultado.matricula}</td>`;
+                    html += `<td>${resultado.nome}</td>`;
+                    html += `<td>${resultado.unidade}</td>`;
+                    html += `<td>${resultado.etapa}</td>`;
+                    html += `<td>${resultado.turma}</td>`;
+                    for (let i = 0; i < maxQuestoes; i++) {
+                        const resposta = resultado.respostas[`q${i}`] || "-";
+                        html += `<td>${resposta.toUpperCase()}</td>`;
+                    }
+                    html += `<td>${resultado.acertos}/${resultado.total} (${resultado.porcentagem.toFixed(2)}%) | ${resultado.portugues_acertos}/${resultado.portugues_total} (${resultado.portugues_porcentagem.toFixed(2)}%) | ${resultado.matematica_acertos}/${resultado.matematica_total} (${resultado.matematica_porcentagem.toFixed(2)}%)</td>`;
+                    html += "</tr>";
+                });
+                tbody.innerHTML = html;
+
+                document.getElementById("contadorFizeram").textContent = `Alunos que fizeram: ${data.fizeram}`;
+                document.getElementById("contadorAusentes").textContent = `Alunos ausentes: ${data.ausentes}`;
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar resultados.");
+            }
+        }
+
+        function atualizarFiltros() {
+            const unidadeSelect = document.getElementById("filtroUnidade");
+            const etapaSelect = document.getElementById("filtroEtapa");
+            const turmaSelect = document.getElementById("filtroTurma");
+            const unidadeSelecionada = unidadeSelect.value;
+            const etapaSelecionada = etapaSelect.value;
+
+            unidadeSelect.innerHTML = '<option value="">Selecione Unidade</option>';
+            unidadesDisponiveis.forEach(unidade => {
+                unidadeSelect.innerHTML += `<option value="${unidade}" ${unidade === unidadeSelecionada ? 'selected' : ''}>${unidade}</option>`;
+            });
+
+            etapaSelect.innerHTML = '<option value="">Selecione Etapa</option>';
+            etapasDisponiveis.forEach(etapa => {
+                etapaSelect.innerHTML += `<option value="${etapa}" ${etapa === etapaSelecionada ? 'selected' : ''}>${etapa}</option>`;
+            });
+
+            turmaSelect.innerHTML = '<option value="">Selecione Turma</option>';
+            if (etapaSelecionada) {
+                turmaSelect.disabled = false;
+                turmasDisponiveis.forEach(turma => {
+                    turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+            } else {
+                turmaSelect.disabled = true;
+            }
+
+            carregarResultadosFiltrados();
+        }
+
+        function exportarParaExcel() {
+            const ws_data = [];
+            const headers = ["Matrícula", "Nome", "Unidade", "Etapa", "Turma"];
+            for (let i = 0; i < maxQuestoes; i++) {
+                headers.push(`Questão ${i + 1}`);
+            }
+            headers.push("Acertos/Total (%) | LP (%) | Mat (%)");
+            ws_data.push(headers);
+
+            resultadosAtuais.forEach(resultado => {
+                const row = [
+                    resultado.matricula,
+                    resultado.nome,
+                    resultado.unidade,
+                    resultado.etapa,
+                    resultado.turma
+                ];
+                for (let i = 0; i < maxQuestoes; i++) {
+                    row.push(resultado.respostas[`q${i}`] ? resultado.respostas[`q${i}`].toUpperCase() : "-");
+                }
+                row.push(`${resultado.acertos}/${resultado.total} (${resultado.porcentagem.toFixed(2)}%) | ${resultado.portugues_acertos}/${resultado.portugues_total} (${resultado.portugues_porcentagem.toFixed(2)}%) | ${resultado.matematica_acertos}/${resultado.matematica_total} (${resultado.matematica_porcentagem.toFixed(2)}%)`);
+                ws_data.push(row);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Resultados");
+            XLSX.writeFile(wb, "resultados_casa_avaliacao.xlsx");
+        }
+
+        carregarResultadosFiltrados();
+    </script>
+</body>
+</html>

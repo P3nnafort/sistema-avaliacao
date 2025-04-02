@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Avaliações</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: row; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 20px; 
+            max-width: 800px; 
+            flex-wrap: wrap; 
+        }
+        .option { 
+            width: 200px; 
+            height: 200px; 
+            background-color: #ffffff; 
+            border: 2px solid #ccc; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            cursor: pointer; 
+            font-size: 18px; 
+            transition: background-color 0.3s; 
+        }
+        .option:hover { 
+            background-color: #e0e0e0; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Sistema de Avaliações</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <div class="option" onclick="window.location.href='realizar_prova.html'">Aluno</div>
+        <div class="option" onclick="window.location.href='resultados_unidade.html'">Unidade</div>
+        <div class="option" onclick="window.location.href='casa_avaliacao.html'">Casa da Avaliação</div>
+    </div>
+</body>
+</html>

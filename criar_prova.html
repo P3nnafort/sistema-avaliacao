@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Criar Prova</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        input, button, textarea, select { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 300px; 
+        }
+        .opcao { 
+            text-align: left; 
+        }
+        label { 
+            margin-bottom: 5px; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Criar Prova</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <label>Etapa:</label>
+        <select id="etapa">
+            <option value="1">Etapa 1</option>
+            <option value="2">Etapa 2</option>
+            <option value="3">Etapa 3</option>
+        </select>
+        <label>Disciplina:</label>
+        <select id="disciplina">
+            <option value="Língua Portuguesa">Língua Portuguesa</option>
+            <option value="Matemática">Matemática</option>
+        </select>
+        <label>Pergunta (Parte 1):</label>
+        <textarea id="pergunta" placeholder="Digite a primeira parte da pergunta aqui"></textarea>
+        <label>Imagem (opcional):</label>
+        <input type="file" id="imagem" accept="image/*">
+        <label>Pergunta (Parte 2):</label>
+        <textarea id="pergunta_complementar" placeholder="Digite a parte complementar da pergunta aqui"></textarea>
+        <label>Opção A:</label>
+        <input type="text" id="opcaoA" class="opcao" placeholder="Digite a opção A">
+        <label>Opção B:</label>
+        <input type="text" id="opcaoB" class="opcao" placeholder="Digite a opção B">
+        <label>Opção C:</label>
+        <input type="text" id="opcaoC" class="opcao" placeholder="Digite a opção C">
+        <label>Opção D:</label>
+        <input type="text" id="opcaoD" class="opcao" placeholder="Digite a opção D">
+        <label>Resposta correta:</label>
+        <select id="respostaCorreta">
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+            <option value="d">D</option>
+        </select>
+        <button onclick="salvarQuestao()">Salvar Questão</button>
+        <button onclick="finalizarCriacao()">Finalizar Prova</button>
+        <button onclick="window.location.href='index.html'">Voltar</button>
+    </div>
+
+    <script>
+        // Salva uma nova questão no servidor
+        async function salvarQuestao() {
+            const etapa = document.getElementById("etapa").value;
+            const disciplina = document.getElementById("disciplina").value;
+            const pergunta = document.getElementById("pergunta").value;
+            const perguntaComplementar = document.getElementById("pergunta_complementar").value;
+            const opcaoA = document.getElementById("opcaoA").value;
+            const opcaoB = document.getElementById("opcaoB").value;
+            const opcaoC = document.getElementById("opcaoC").value;
+            const opcaoD = document.getElementById("opcaoD").value;
+            const respostaCorreta = document.getElementById("respostaCorreta").value;
+            const imagem = document.getElementById("imagem").files[0];
+
+            // Verifica se os campos obrigatórios estão preenchidos
+            if (!pergunta || !opcaoA || !opcaoB || !opcaoC || !opcaoD) {
+                alert("Preencha todos os campos obrigatórios (Pergunta Parte 1 e opções)!");
+                return;
+            }
+
+            // Cria um objeto FormData pra enviar os dados, incluindo a imagem
+            const formData = new FormData();
+            formData.append("etapa", etapa);
+            formData.append("disciplina", disciplina);
+            formData.append("pergunta", pergunta);
+            formData.append("pergunta_complementar", perguntaComplementar || "");
+            formData.append("opcao_a", opcaoA);
+            formData.append("opcao_b", opcaoB);
+            formData.append("opcao_c", opcaoC);
+            formData.append("opcao_d", opcaoD);
+            formData.append("resposta_correta", respostaCorreta);
+            if (imagem) {
+                formData.append("imagem", imagem);
+            }
+
+            try {
+                // Envia os dados pro servidor
+                const response = await fetch("http://127.0.0.1:5000/salvar_questao", {
+                    method: "POST",
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.status === "success") {
+                    alert("Questão salva com sucesso!");
+                    // Limpa os campos após salvar
+                    document.getElementById("pergunta").value = "";
+                    document.getElementById("pergunta_complementar").value = "";
+                    document.getElementById("opcaoA").value = "";
+                    document.getElementById("opcaoB").value = "";
+                    document.getElementById("opcaoC").value = "";
+                    document.getElementById("opcaoD").value = "";
+                    document.getElementById("imagem").value = "";
+                    document.getElementById("respostaCorreta").value = "a";
+                } else {
+                    alert("Erro ao salvar questão: " + result.message);
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        // Redireciona pra visualização da prova após confirmação
+        function finalizarCriacao() {
+            const etapa = document.getElementById("etapa").value;
+            const disciplina = document.getElementById("disciplina").value;
+            if (confirm("Deseja finalizar e visualizar a prova?")) {
+                window.location.href = `visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`;
+            }
+        }
+    </script>
+</body>
+</html>

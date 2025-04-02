@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Realizar Prova</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        input, button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 300px; 
+        }
+        .erro { 
+            color: red; 
+            display: none; 
+        }
+        .questao { 
+            display: none; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Realizar Prova</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content" id="login">
+        <label>Digite sua matrícula (13 dígitos):</label><br>
+        <input type="text" id="matricula" placeholder="Ex.: 1234567890123"><br>
+        <p id="mensagemErro" class="erro">A matrícula deve ter exatamente 13 números!</p>
+        <p id="matriculaInvalida" class="erro">Matrícula não encontrada!</p>
+        <button onclick="iniciarProva()">Iniciar Prova</button>
+        <br><button onclick="window.location.href='/index.html'">Voltar</button>
+    </div>
+
+    <div id="prova" class="content"></div>
+
+    <script>
+        let matriculaValida = null;
+        let alunoAtual = null;
+        let respostas = {};
+        let questoes = [];
+        let questaoAtual = 0;
+
+        async function iniciarProva() {
+            let matricula = document.getElementById("matricula").value;
+            let mensagemErro = document.getElementById("mensagemErro");
+            let matriculaInvalida = document.getElementById("matriculaInvalida");
+
+            if (!/^\d{13}$/.test(matricula)) {
+                mensagemErro.style.display = "block";
+                matriculaInvalida.style.display = "none";
+                return;
+            }
+
+            try {
+                const response = await fetch("http://127.0.0.1:5000/verificar_matricula", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ matricula: matricula })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    matriculaValida = matricula;
+                    alunoAtual = data.aluno;
+                    await carregarQuestoes();
+                    if (questoes.length === 0) {
+                        alert("Nenhuma questão disponível para a sua etapa!");
+                        return;
+                    }
+                    document.getElementById("login").style.display = "none";
+                    mostrarQuestao(0);
+                } else {
+                    mensagemErro.style.display = "none";
+                    matriculaInvalida.style.display = "block";
+                }
+            } catch (error) {
+                console.error("Erro detalhado:", error);
+                alert("Erro ao conectar ao servidor: " + error.message);
+            }
+        }
+
+        async function carregarQuestoes() {
+            const etapa = alunoAtual.etapa;
+            const response = await fetch(`http://127.0.0.1:5000/carregar_questoes?etapa=${etapa}`);
+            const todasQuestoes = await response.json();
+
+            const portugues = todasQuestoes.filter(q => q.disciplina === "Língua Portuguesa");
+            const matematica = todasQuestoes.filter(q => q.disciplina === "Matemática");
+            questoes = [...portugues, ...matematica];
+        }
+
+        function mostrarQuestao(indice) {
+            if (indice >= questoes.length) {
+                finalizarProva();
+                return;
+            }
+            const questao = questoes[indice];
+            const provaDiv = document.getElementById("prova");
+            let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;">` : "";
+            let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
+            provaDiv.innerHTML = `
+                <h2>Questão ${indice + 1} (${questao.disciplina} - Etapa ${questao.etapa})</h2>
+                <p>${questao.pergunta}</p>
+                ${imagemHtml}
+                ${complementoHtml}
+                <input type="radio" name="q${indice}" value="a"> A) ${questao.opcao_a}<br>
+                <input type="radio" name="q${indice}" value="b"> B) ${questao.opcao_b}<br>
+                <input type="radio" name="q${indice}" value="c"> C) ${questao.opcao_c}<br>
+                <input type="radio" name="q${indice}" value="d"> D) ${questao.opcao_d}<br>
+                <button id="proxima${indice}" onclick="proximaQuestao()" disabled>${indice + 1 === questoes.length ? "Finalizar" : "Próxima"}</button>
+            `;
+            provaDiv.style.display = "block";
+
+            document.querySelectorAll(`input[name="q${indice}"]`).forEach(input => {
+                input.addEventListener("change", function() {
+                    respostas[`q${indice}`] = this.value;
+                    document.getElementById(`proxima${indice}`).disabled = false;
+                });
+            });
+        }
+
+        function proximaQuestao() {
+            questaoAtual++;
+            mostrarQuestao(questaoAtual);
+        }
+
+        async function finalizarProva() {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/salvar_resultado", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        matricula: alunoAtual.matricula,
+                        nome: alunoAtual.nome,
+                        unidade: alunoAtual.unidade,
+                        etapa: alunoAtual.etapa,
+                        turma: alunoAtual.turma,
+                        respostas: respostas,
+                        questoes: questoes
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    let url = `/resultado.html?matricula=${data.matricula}&nome=${encodeURIComponent(data.nome)}&unidade=${encodeURIComponent(data.unidade)}&etapa=${data.etapa}&turma=${data.turma}`;
+                    url += `&acertos=${data.acertos}&total=${data.total}&porcentagem=${data.porcentagem}`;
+                    url += `&portugues_acertos=${data.portugues_acertos}&portugues_total=${data.portugues_total}&portugues_porcentagem=${data.portugues_porcentagem}`;
+                    url += `&matematica_acertos=${data.matematica_acertos}&matematica_total=${data.matematica_total}&matematica_porcentagem=${data.matematica_porcentagem}`;
+                    Object.keys(respostas).forEach(key => {
+                        url += `&${key}=${respostas[key]}`;
+                    });
+                    window.location.href = url;
+                } else {
+                    alert("Erro ao salvar resultado!");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+    </script>
+</body>
+</html>

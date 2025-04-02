@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado da Prova</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+            z-index: 10; /* Garante que as logos fiquem acima da tabela */
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+            z-index: 10; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+            width: 100%; 
+        }
+        .table-container { 
+            width: 100%; 
+            overflow-x: auto; /* Adiciona rolagem horizontal */
+            margin: 20px 0; 
+        }
+        table { 
+            width: auto; /* Permite que a tabela cresça conforme o conteúdo */
+            min-width: 100%; /* Garante que ocupe o container */
+            border-collapse: collapse; 
+            font-size: 10px; /* Arial 10 */
+        }
+        th, td { 
+            border: 1px solid black; 
+            padding: 6px; /* Reduzido pra caber mais */
+            white-space: nowrap; /* Evita quebra de linha nas células */
+        }
+        #acertos { 
+            font-size: 14px; /* Um pouco maior que a tabela pra legibilidade */
+            margin: 20px; 
+        }
+        button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 300px; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Resultado da Prova</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <div class="table-container">
+            <table id="tabelaResultado">
+                <thead id="cabecalho"></thead>
+                <tbody id="dadosAluno"></tbody>
+            </table>
+        </div>
+        <p id="acertos"></p>
+        <button onclick="window.location.href='/index.html'">Voltar ao Início</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const matricula = urlParams.get("matricula");
+        const nome = urlParams.get("nome");
+        const unidade = urlParams.get("unidade");
+        const etapa = urlParams.get("etapa");
+        const turma = urlParams.get("turma");
+        const acertos = urlParams.get("acertos");
+        const total = urlParams.get("total");
+        const porcentagem = urlParams.get("porcentagem");
+        const portugues_acertos = urlParams.get("portugues_acertos");
+        const portugues_total = urlParams.get("portugues_total");
+        const portugues_porcentagem = urlParams.get("portugues_porcentagem");
+        const matematica_acertos = urlParams.get("matematica_acertos");
+        const matematica_total = urlParams.get("matematica_total");
+        const matematica_porcentagem = urlParams.get("matematica_porcentagem");
+
+        const respostas = {};
+        urlParams.forEach((value, key) => {
+            if (key.startsWith("q")) {
+                respostas[key] = value;
+            }
+        });
+
+        let cabecalho = "<tr><th>Matrícula</th><th>Nome</th><th>Unidade</th><th>Etapa</th><th>Turma</th>";
+        Object.keys(respostas).forEach(q => {
+            cabecalho += `<th>Questão ${parseInt(q.replace("q", "")) + 1}</th>`;
+        });
+        cabecalho += "</tr>";
+        document.getElementById("cabecalho").innerHTML = cabecalho;
+
+        let dados = `<td>${matricula}</td><td>${nome}</td><td>${unidade}</td><td>${etapa}</td><td>${turma}</td>`;
+        Object.values(respostas).forEach(valor => {
+            dados += `<td>${valor.toUpperCase()}</td>`;
+        });
+        document.getElementById("dadosAluno").innerHTML = `<tr>${dados}</tr>`;
+
+        document.getElementById("acertos").innerHTML = `
+            Acertos: ${acertos} de ${total} (${porcentagem}%)<br>
+            Língua Portuguesa: ${portugues_acertos} de ${portugues_total} (${portugues_porcentagem}%)<br>
+            Matemática: ${matematica_acertos} de ${matematica_total} (${matematica_porcentagem}%)
+        `;
+    </script>
+</body>
+</html>
