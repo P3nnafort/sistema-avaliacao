@@ -365,6 +365,28 @@ def upload_informativo():
     file.save(os.path.join(app.config['INFORMATIVOS_FOLDER'], file.filename))
     return jsonify({"status": "success", "message": "Informativo enviado com sucesso"})
 
+@app.route('/listar_informativos')
+def listar_informativos():
+    arquivos = os.listdir(app.config['INFORMATIVOS_FOLDER'])
+    return jsonify({"arquivos": arquivos})
+
+@app.route('/informativos/<filename>')
+def download_informativo(filename):
+    return send_from_directory(app.config['INFORMATIVOS_FOLDER'], filename)
+
+@app.route('/upload_avaliacao_fisica', methods=['POST'])
+def upload_avaliacao_fisica():
+    return jsonify({"status": "success", "message": "Avaliação física enviada com sucesso"})
+
+@app.route('/listar_avaliacoes_fisicas')
+def listar_avaliacoes_fisicas():
+    arquivos = sorted(os.listdir(app.config['AVALIACOES_FISICAS_FOLDER']), key=lambda x: int(x.split('_')[1]) if x.startswith('Etapa_') else float('inf'))
+    return jsonify({"arquivos": arquivos})
+
+@app.route('/avaliacoes_fisicas/<filename>')
+def download_avaliacao_fisica(filename):
+    return send_from_directory(app.config['AVALIACOES_FISICAS_FOLDER'], filename)
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
