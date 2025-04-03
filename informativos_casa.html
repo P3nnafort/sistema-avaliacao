@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Informativos - Casa da Avaliação</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        .upload-area { 
+            margin: 20px 0; 
+        }
+        .arquivo-lista { 
+            margin: 20px 0; 
+            text-align: left; 
+        }
+        .arquivo-lista a { 
+            display: block; 
+            margin: 5px 0; 
+            padding: 10px; 
+            background-color: #f0f0f0; 
+            text-decoration: none; 
+            color: #000; 
+            border: 1px solid #ccc; 
+        }
+        .arquivo-lista a:hover { 
+            background-color: #e0e0e0; 
+        }
+        input, button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 300px; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Informativos - Casa da Avaliação</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <div class="upload-area">
+            <h2>Upload de Informativo</h2>
+            <input type="file" id="informativoFile">
+            <button onclick="uploadInformativo()">Enviar</button>
+        </div>
+        <div class="arquivo-lista" id="arquivoLista"></div>
+        <button onclick="window.location.href='/casa_avaliacao.html?cpf=' + urlParams.get('cpf')">Voltar</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const cpf = urlParams.get("cpf");
+
+        async function uploadInformativo() {
+            const fileInput = document.getElementById("informativoFile");
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Por favor, selecione um arquivo.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch("/upload_informativo", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Informativo enviado com sucesso!");
+                    fileInput.value = "";
+                    carregarInformativos();
+                } else {
+                    alert(data.message || "Erro ao enviar informativo.");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        async function carregarInformativos() {
+            try {
+                const response = await fetch("/listar_informativos");
+                const data = await response.json();
+
+                const listaDiv = document.getElementById("arquivoLista");
+                if (data.arquivos.length === 0) {
+                    listaDiv.innerHTML = "<p>Nenhum informativo disponível.</p>";
+                } else {
+                    let html = "<h2>Informativos Disponíveis</h2>";
+                    data.arquivos.forEach(arquivo => {
+                        html += `<a href="/informativos/${arquivo}" target="_blank">${arquivo}</a>`;
+                    });
+                    listaDiv.innerHTML = html;
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar informativos.");
+            }
+        }
+
+        carregarInformativos();
+    </script>
+</body>
+</html>

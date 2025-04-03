@@ -14,9 +14,12 @@ servidores = []
 casa_avaliacao = []
 
 UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+INFORMATIVOS_FOLDER = 'informativos'
+for folder in [UPLOAD_FOLDER, INFORMATIVOS_FOLDER]:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['INFORMATIVOS_FOLDER'] = INFORMATIVOS_FOLDER
 
 def carregar_csv():
     global alunos, servidores, casa_avaliacao
@@ -68,6 +71,14 @@ def serve_visualizar_prova():
 @app.route('/visualizar_avaliacao.html')
 def serve_visualizar_avaliacao():
     return send_file('visualizar_avaliacao.html')
+
+@app.route('/informativos_unidade.html')
+def serve_informativos_unidade():
+    return send_file('informativos_unidade.html')
+
+@app.route('/informativos_casa.html')
+def serve_informativos_casa():
+    return send_file('informativos_casa.html')
 
 @app.route('/resultado.html')
 def serve_resultado():
@@ -323,6 +334,25 @@ def carregar_avaliacao_completa():
 def listar_avaliacoes():
     avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in questoes))
     return jsonify({"avaliacoes": avaliacoes})
+
+@app.route('/upload_informativo', methods=['POST'])
+def upload_informativo():
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "Nenhum arquivo enviado"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
+    file.save(os.path.join(app.config['INFORMATIVOS_FOLDER'], file.filename))
+    return jsonify({"status": "success", "message": "Informativo enviado com sucesso"})
+
+@app.route('/listar_informativos')
+def listar_informativos():
+    arquivos = os.listdir(app.config['INFORMATIVOS_FOLDER'])
+    return jsonify({"arquivos": arquivos})
+
+@app.route('/informativos/<filename>')
+def download_informativo(filename):
+    return send_from_directory(app.config['INFORMATIVOS_FOLDER'], filename)
 
 if __name__ == '__main__':
     carregar_csv()

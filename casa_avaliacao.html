@@ -100,6 +100,7 @@
         <button onclick="window.location.href='/criar_prova.html'">Criar Avaliações</button>
         <button onclick="visualizarResultados()">Visualizar Resultados</button>
         <button onclick="visualizarAvaliacoes()">Visualizar Avaliações</button>
+        <button onclick="visualizarInformativos()">Informativos</button>
         <br><button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
@@ -146,6 +147,10 @@
 
         function visualizarAvaliacoes() {
             window.location.href = `/visualizar_avaliacao.html?cpf=${cpfValido}`;
+        }
+
+        function visualizarInformativos() {
+            window.location.href = `/informativos_casa.html?cpf=${cpfValido}`;
         }
     </script>
 </body>

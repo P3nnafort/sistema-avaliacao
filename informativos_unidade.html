@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Opções da Unidade</title>
+    <title>Informativos - Unidade</title>
     <style>
         body { 
             text-align: center; 
@@ -61,6 +61,22 @@
             align-items: center; 
             max-width: 600px; 
         }
+        .arquivo-lista { 
+            margin: 20px 0; 
+            text-align: left; 
+        }
+        .arquivo-lista a { 
+            display: block; 
+            margin: 5px 0; 
+            padding: 10px; 
+            background-color: #f0f0f0; 
+            text-decoration: none; 
+            color: #000; 
+            border: 1px solid #ccc; 
+        }
+        .arquivo-lista a:hover { 
+            background-color: #e0e0e0; 
+        }
         button { 
             margin: 10px; 
             padding: 5px; 
@@ -72,7 +88,7 @@
 <body>
     <header>
         <div class="titulo">
-            <h1>Unidade - Opções</h1>
+            <h1>Informativos - Unidade</h1>
         </div>
     </header>
 
@@ -84,27 +100,36 @@
     </div>
 
     <div class="content">
-        <button onclick="visualizarResultados()">Visualizar Resultados</button>
-        <button onclick="visualizarAvaliacoes()">Visualizar Avaliações</button>
-        <button onclick="visualizarInformativos()">Informativos</button>
-        <br><button onclick="window.location.href='/index.html'">Voltar</button>
+        <div class="arquivo-lista" id="arquivoLista"></div>
+        <button onclick="window.location.href='/opcoes_unidade.html?cpf=' + urlParams.get('cpf')">Voltar</button>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const cpf = urlParams.get("cpf");
 
-        function visualizarResultados() {
-            window.location.href = `/resultados_unidade.html?cpf=${cpf}`;
+        async function carregarInformativos() {
+            try {
+                const response = await fetch("/listar_informativos");
+                const data = await response.json();
+
+                const listaDiv = document.getElementById("arquivoLista");
+                if (data.arquivos.length === 0) {
+                    listaDiv.innerHTML = "<p>Nenhum informativo disponível.</p>";
+                } else {
+                    let html = "<h2>Informativos Disponíveis</h2>";
+                    data.arquivos.forEach(arquivo => {
+                        html += `<a href="/informativos/${arquivo}" target="_blank">${arquivo}</a>`;
+                    });
+                    listaDiv.innerHTML = html;
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar informativos.");
+            }
         }
 
-        function visualizarAvaliacoes() {
-            window.location.href = `/visualizar_avaliacao.html?cpf=${cpf}`;
-        }
-
-        function visualizarInformativos() {
-            window.location.href = `/informativos_unidade.html?cpf=${cpf}`;
-        }
+        carregarInformativos();
     </script>
 </body>
 </html>
