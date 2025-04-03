@@ -1,5 +1,4 @@
-Flask==2.3.2
-flask-cors==3.0.10<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -62,7 +61,7 @@ flask-cors==3.0.10<!DOCTYPE html>
             align-items: center; 
             max-width: 600px; 
         }
-        input, button { 
+        input[type="text"], button { 
             margin: 10px; 
             padding: 5px; 
             width: 100%; 
@@ -72,8 +71,43 @@ flask-cors==3.0.10<!DOCTYPE html>
             color: red; 
             display: none; 
         }
-        .questao { 
-            display: none; 
+        #prova { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; 
+        }
+        #prova h2, #prova p { 
+            margin: 10px 0; 
+            text-align: center; 
+        }
+        #prova img { 
+            max-width: 300px; 
+            margin: 10px 0; 
+        }
+        .opcoes { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        .opcao { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; 
+            width: 100%; 
+            margin: 5px 0; 
+        }
+        .opcao input[type="radio"] { 
+            margin-right: 10px; 
+        }
+        .opcao label { 
+            text-align: left; 
+            flex-grow: 1; 
+        }
+        button { 
+            margin-top: 20px; 
         }
     </style>
 </head>
@@ -172,10 +206,24 @@ flask-cors==3.0.10<!DOCTYPE html>
                 <p>${questao.pergunta}</p>
                 ${imagemHtml}
                 ${complementoHtml}
-                <input type="radio" name="q${indice}" value="a"> A) ${questao.opcao_a}<br>
-                <input type="radio" name="q${indice}" value="b"> B) ${questao.opcao_b}<br>
-                <input type="radio" name="q${indice}" value="c"> C) ${questao.opcao_c}<br>
-                <input type="radio" name="q${indice}" value="d"> D) ${questao.opcao_d}<br>
+                <div class="opcoes">
+                    <div class="opcao">
+                        <input type="radio" name="q${indice}" id="q${indice}a" value="a">
+                        <label for="q${indice}a">A) ${questao.opcao_a}</label>
+                    </div>
+                    <div class="opcao">
+                        <input type="radio" name="q${indice}" id="q${indice}b" value="b">
+                        <label for="q${indice}b">B) ${questao.opcao_b}</label>
+                    </div>
+                    <div class="opcao">
+                        <input type="radio" name="q${indice}" id="q${indice}c" value="c">
+                        <label for="q${indice}c">C) ${questao.opcao_c}</label>
+                    </div>
+                    <div class="opcao">
+                        <input type="radio" name="q${indice}" id="q${indice}d" value="d">
+                        <label for="q${indice}d">D) ${questao.opcao_d}</label>
+                    </div>
+                </div>
                 <button id="proxima${indice}" onclick="proximaQuestao()" disabled>${indice + 1 === questoes.length ? "Finalizar" : "Próxima"}</button>
             `;
             provaDiv.style.display = "block";
