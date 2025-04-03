@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Opções da Unidade</title>
+    <title>Escolha Tipo de Avaliação - Casa da Avaliação</title>
     <style>
         body { 
             text-align: center; 
@@ -72,7 +72,7 @@
 <body>
     <header>
         <div class="titulo">
-            <h1>Unidade - Opções</h1>
+            <h1>Escolha Tipo de Avaliação - Casa da Avaliação</h1>
         </div>
     </header>
 
@@ -84,26 +84,21 @@
     </div>
 
     <div class="content">
-        <button onclick="visualizarResultados()">Visualizar Resultados</button>
-        <button onclick="visualizarAvaliacoes()">Visualizar Avaliações</button>
-        <button onclick="visualizarInformativos()">Informativos</button>
-        <br><button onclick="window.location.href='/index.html'">Voltar</button>
+        <button onclick="visualizarDigital()">Digital</button>
+        <button onclick="visualizarFisica()">Física</button>
+        <br><button onclick="window.location.href='/casa_avaliacao.html?cpf=' + urlParams.get('cpf')">Voltar</button>
     </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const cpf = urlParams.get("cpf");
 
-        function visualizarResultados() {
-            window.location.href = `/resultados_unidade.html?cpf=${cpf}`;
+        function visualizarDigital() {
+            window.location.href = `/visualizar_avaliacao.html?cpf=${cpf}`;
         }
 
-        function visualizarAvaliacoes() {
-            window.location.href = `/escolha_avaliacao_unidade.html?cpf=${cpf}`;
-        }
-
-        function visualizarInformativos() {
-            window.location.href = `/informativos_unidade.html?cpf=${cpf}`;
+        function visualizarFisica() {
+            window.location.href = `/avaliacoes_fisicas_casa.html?cpf=${cpf}`;
         }
     </script>
 </body>

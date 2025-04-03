@@ -15,11 +15,13 @@ casa_avaliacao = []
 
 UPLOAD_FOLDER = 'uploads'
 INFORMATIVOS_FOLDER = 'informativos'
-for folder in [UPLOAD_FOLDER, INFORMATIVOS_FOLDER]:
+AVALIACOES_FISICAS_FOLDER = 'avaliacoes_fisicas'
+for folder in [UPLOAD_FOLDER, INFORMATIVOS_FOLDER, AVALIACOES_FISICAS_FOLDER]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['INFORMATIVOS_FOLDER'] = INFORMATIVOS_FOLDER
+app.config['AVALIACOES_FISICAS_FOLDER'] = AVALIACOES_FISICAS_FOLDER
 
 def carregar_csv():
     global alunos, servidores, casa_avaliacao
@@ -52,9 +54,17 @@ def serve_resultados_unidade():
 def serve_opcoes_unidade():
     return send_file('opcoes_unidade.html')
 
+@app.route('/escolha_avaliacao_unidade.html')
+def serve_escolha_avaliacao_unidade():
+    return send_file('escolha_avaliacao_unidade.html')
+
 @app.route('/casa_avaliacao.html')
 def serve_casa_avaliacao():
     return send_file('casa_avaliacao.html')
+
+@app.route('/escolha_avaliacao_casa.html')
+def serve_escolha_avaliacao_casa():
+    return send_file('escolha_avaliacao_casa.html')
 
 @app.route('/resultados_casa.html')
 def serve_resultados_casa():
@@ -79,6 +89,14 @@ def serve_informativos_unidade():
 @app.route('/informativos_casa.html')
 def serve_informativos_casa():
     return send_file('informativos_casa.html')
+
+@app.route('/avaliacoes_fisicas_unidade.html')
+def serve_avaliacoes_fisicas_unidade():
+    return send_file('avaliacoes_fisicas_unidade.html')
+
+@app.route('/avaliacoes_fisicas_casa.html')
+def serve_avaliacoes_fisicas_casa():
+    return send_file('avaliacoes_fisicas_casa.html')
 
 @app.route('/resultado.html')
 def serve_resultado():
@@ -353,6 +371,27 @@ def listar_informativos():
 @app.route('/informativos/<filename>')
 def download_informativo(filename):
     return send_from_directory(app.config['INFORMATIVOS_FOLDER'], filename)
+
+@app.route('/upload_avaliacao_fisica', methods=['POST'])
+def upload_avaliacao_fisica():
+    if 'file' not in request.files or 'etapa' not in request.form:
+        return jsonify({"status": "error", "message": "Arquivo ou etapa não fornecido"}), 400
+    file = request.files['file']
+    etapa = request.form['etapa']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
+    filename = f"Etapa_{etapa}_{file.filename}"
+    file.save(os.path.join(app.config['AVALIACOES_FISICAS_FOLDER'], filename))
+    return jsonify({"status": "success", "message": "Avaliação física enviada com sucesso"})
+
+@app.route('/listar_avaliacoes_fisicas')
+def listar_avaliacoes_fisicas():
+    arquivos = sorted(os.listdir(app.config['AVALIACOES_FISICAS_FOLDER']), key=lambda x: int(x.split('_')[1]) if x.startswith('Etapa_') else float('inf'))
+    return jsonify({"arquivos": arquivos})
+
+@app.route('/avaliacoes_fisicas/<filename>')
+def download_avaliacao_fisica(filename):
+    return send_from_directory(app.config['AVALIACOES_FISICAS_FOLDER'], filename)
 
 if __name__ == '__main__':
     carregar_csv()
