@@ -45,6 +45,10 @@ def serve_realizar_prova():
 def serve_resultados_unidade():
     return send_file('resultados_unidade.html')
 
+@app.route('/opcoes_unidade.html')
+def serve_opcoes_unidade():
+    return send_file('opcoes_unidade.html')
+
 @app.route('/casa_avaliacao.html')
 def serve_casa_avaliacao():
     return send_file('casa_avaliacao.html')
@@ -60,6 +64,10 @@ def serve_criar_prova():
 @app.route('/visualizar_prova.html')
 def serve_visualizar_prova():
     return send_file('visualizar_prova.html')
+
+@app.route('/visualizar_avaliacao.html')
+def serve_visualizar_avaliacao():
+    return send_file('visualizar_avaliacao.html')
 
 @app.route('/resultado.html')
 def serve_resultado():
@@ -78,8 +86,11 @@ def verificar_matricula():
 def carregar_questoes():
     etapa = request.args.get('etapa')
     disciplina = request.args.get('disciplina')
-    if disciplina:
-        filtered_questoes = [q for q in questoes if q['etapa'] == etapa and q['disciplina'] == disciplina]
+    nome_avaliacao = request.args.get('nome_avaliacao')
+    if nome_avaliacao and disciplina:
+        filtered_questoes = [q for q in questoes if q['nome_avaliacao'] == nome_avaliacao and q['disciplina'] == disciplina and q['etapa'] == etapa]
+    elif disciplina:
+        filtered_questoes = [q for q in questoes if q['disciplina'] == disciplina and q['etapa'] == etapa]
     else:
         filtered_questoes = [q for q in questoes if q['etapa'] == etapa]
     return jsonify(filtered_questoes)
@@ -88,6 +99,7 @@ def carregar_questoes():
 def salvar_questao():
     etapa = request.form['etapa']
     disciplina = request.form['disciplina']
+    nome_avaliacao = request.form['nome_avaliacao']
     pergunta = request.form['pergunta']
     pergunta_complementar = request.form.get('pergunta_complementar', '')
     opcao_a = request.form['opcao_a']
@@ -106,6 +118,8 @@ def salvar_questao():
         "id": len(questoes) + 1,
         "etapa": etapa,
         "disciplina": disciplina,
+        "nome_avaliacao": nome_avaliacao,
+        "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
         "pergunta": pergunta,
         "pergunta_complementar": pergunta_complementar,
         "opcao_a": opcao_a,
@@ -288,7 +302,24 @@ def salvar_resultado():
         "matematica_porcentagem": matematica_porcentagem
     })
 
+@app.route('/etapas_permitidas', methods=['POST'])
+def etapas_permitidas():
+    data = request.get_json()
+    cpf = data.get('cpf')
+    usuario = next((u for u in casa_avaliacao if u['cpf'] == cpf), None)
+    if usuario:
+        etapas = usuario['etapas'].split(',')
+        return jsonify({"status": "success", "etapas": etapas})
+    return jsonify({"status": "error", "message": "CPF não encontrado"})
+
+@app.route('/carregar_avaliacao_completa')
+def carregar_avaliacao_completa():
+    etapa = request.args.get('etapa')
+    nome_avaliacao = request.args.get('nome_avaliacao')
+    filtered_questoes = [q for q in questoes if q['etapa'] == etapa and q['nome_avaliacao'] == nome_avaliacao]
+    return jsonify(filtered_questoes)
+
 if __name__ == '__main__':
     carregar_csv()
-    port = int(os.environ.get("PORT", 5000))  # Usa a porta do Render ou 5000 localmente
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

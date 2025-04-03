@@ -137,6 +137,19 @@
             <span id="contadorFizeram">Alunos que fizeram: 0</span> | 
             <span id="contadorAusentes">Alunos ausentes: 0</span>
         </div>
+        <div class="filters">
+            <select id="visualizarNomeAvaliacao">
+                <option value="">Selecione Nome da Avaliação</option>
+                <option value="Avaliação 1">Avaliação 1</option>
+                <option value="Avaliação 2">Avaliação 2</option>
+                <option value="Avaliação 3">Avaliação 3</option>
+                <option value="Avaliação 4">Avaliação 4</option>
+                <option value="Avaliação 5">Avaliação 5</option>
+                <option value="Avaliação 6">Avaliação 6</option>
+            </select>
+            <select id="visualizarEtapa"></select>
+            <button onclick="visualizarAvaliacao()">Visualizar Avaliação</button>
+        </div>
         <div class="table-container">
             <table id="tabelaResultados">
                 <thead id="cabecalhoResultados"></thead>
@@ -151,6 +164,7 @@
         let unidadeAtual = "";
         let etapasDisponiveis = [];
         let turmasDisponiveis = [];
+        let cpfAtual = "";
 
         async function verificarCpf() {
             let cpf = document.getElementById("cpf").value;
@@ -172,9 +186,9 @@
                 const data = await response.json();
 
                 if (data.status === "success") {
+                    cpfAtual = cpf;
                     unidadeAtual = data.unidade;
-                    document.getElementById("login").style.display = "none";
-                    carregarResultadosFiltrados();
+                    window.location.href = `/opcoes_unidade.html?cpf=${cpf}`;
                 } else {
                     mensagemErro.style.display = "none";
                     cpfInvalido.style.display = "block";
@@ -186,6 +200,8 @@
         }
 
         async function carregarResultadosFiltrados() {
+            const urlParams = new URLSearchParams(window.location.search);
+            cpfAtual = urlParams.get("cpf");
             const etapa = document.getElementById("filtroEtapa").value;
             const turma = document.getElementById("filtroTurma").value;
 
@@ -231,6 +247,12 @@
                 document.getElementById("contadorFizeram").textContent = `Alunos que fizeram: ${data.fizeram}`;
                 document.getElementById("contadorAusentes").textContent = `Alunos ausentes: ${data.ausentes}`;
                 document.getElementById("resultados").style.display = "block";
+
+                const visualizarEtapaSelect = document.getElementById("visualizarEtapa");
+                visualizarEtapaSelect.innerHTML = '<option value="">Selecione Etapa</option>';
+                etapasDisponiveis.forEach(etapa => {
+                    visualizarEtapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
+                });
             } catch (error) {
                 console.error("Erro:", error);
                 alert("Erro ao carregar resultados.");
@@ -257,6 +279,23 @@
                 turmaSelect.disabled = true;
             }
 
+            carregarResultadosFiltrados();
+        }
+
+        function visualizarAvaliacao() {
+            const nome_avaliacao = document.getElementById("visualizarNomeAvaliacao").value;
+            const etapa = document.getElementById("visualizarEtapa").value;
+            if (!nome_avaliacao || !etapa) {
+                alert("Por favor, selecione o nome da avaliação e a etapa.");
+                return;
+            }
+            window.location.href = `/visualizar_avaliacao.html?nome_avaliacao=${encodeURIComponent(nome_avaliacao)}&etapa=${etapa}`;
+        }
+
+        // Carrega resultados se já tiver CPF (vindo de opcoes_unidade.html)
+        if (window.location.search.includes("cpf")) {
+            document.getElementById("login").style.display = "none";
+            document.getElementById("resultados").style.display = "block";
             carregarResultadosFiltrados();
         }
     </script>
