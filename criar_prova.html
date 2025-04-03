@@ -89,8 +89,10 @@
     </div>
 
     <div class="content">
+        <label>Nome da Avaliação:</label>
+        <input type="text" id="nome_avaliacao" placeholder="Ex.: Avaliação 1"><br>
         <label>Etapa:</label>
-        <input type="text" id="etapa" placeholder="Ex.: 1"><br>
+        <select id="etapa"></select><br>
         <label>Disciplina:</label>
         <select id="disciplina">
             <option value="Língua Portuguesa">Língua Portuguesa</option>
@@ -98,6 +100,8 @@
         </select><br>
         <label>Pergunta:</label>
         <textarea id="pergunta" placeholder="Digite a pergunta"></textarea><br>
+        <label>Imagem (opcional):</label>
+        <input type="file" id="imagem" accept="image/*"><br>
         <label>Pergunta complementar (opcional):</label>
         <textarea id="pergunta_complementar" placeholder="Digite a pergunta complementar (opcional)"></textarea><br>
         <label>Opção A:</label>
@@ -115,15 +119,46 @@
             <option value="c">C</option>
             <option value="d">D</option>
         </select><br>
-        <label>Imagem (opcional):</label>
-        <input type="file" id="imagem" accept="image/*"><br>
         <button onclick="salvarQuestao()">Salvar Questão</button>
         <button onclick="finalizarProva()">Finalizar Prova</button>
         <br><button onclick="window.location.href='/casa_avaliacao.html'">Voltar</button>
     </div>
 
     <script>
+        let cpfAtual = localStorage.getItem("cpfValido");
+
+        async function carregarEtapas() {
+            if (!cpfAtual) {
+                alert("CPF não encontrado. Por favor, faça login novamente.");
+                window.location.href = '/casa_avaliacao.html';
+                return;
+            }
+
+            try {
+                const response = await fetch("/etapas_permitidas", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cpf: cpfAtual })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    const etapaSelect = document.getElementById("etapa");
+                    etapaSelect.innerHTML = '<option value="">Selecione Etapa</option>';
+                    data.etapas.forEach(etapa => {
+                        etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
+                    });
+                } else {
+                    alert("Erro ao carregar etapas permitidas.");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
         async function salvarQuestao() {
+            const nome_avaliacao = document.getElementById("nome_avaliacao").value;
             const etapa = document.getElementById("etapa").value;
             const disciplina = document.getElementById("disciplina").value;
             const pergunta = document.getElementById("pergunta").value;
@@ -135,7 +170,13 @@
             const resposta_correta = document.getElementById("resposta_correta").value;
             const imagem = document.getElementById("imagem").files[0];
 
+            if (!nome_avaliacao || !etapa || !pergunta || !opcao_a || !opcao_b || !opcao_c || !opcao_d) {
+                alert("Por favor, preencha todos os campos obrigatórios.");
+                return;
+            }
+
             const formData = new FormData();
+            formData.append("nome_avaliacao", nome_avaliacao);
             formData.append("etapa", etapa);
             formData.append("disciplina", disciplina);
             formData.append("pergunta", pergunta);
@@ -171,15 +212,18 @@
                 }
             } catch (error) {
                 console.error("Erro:", error);
-                alert("Erro ao conectar ao servidor.");
+                alert("Erro ao conectar ao servidor: " + error.message);
             }
         }
 
         function finalizarProva() {
+            const nome_avaliacao = document.getElementById("nome_avaliacao").value;
             const etapa = document.getElementById("etapa").value;
             const disciplina = document.getElementById("disciplina").value;
-            window.location.href = `/visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`;
+            window.location.href = `/visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`;
         }
+
+        window.onload = carregarEtapas;
     </script>
 </body>
 </html>
