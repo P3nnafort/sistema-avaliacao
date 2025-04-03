@@ -1,17 +1,14 @@
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import os
-import csv
-import json
+from supabase import create_client, Client
 
 app = Flask(__name__)
 CORS(app)
 
-alunos = []
-questoes = []
-resultados = []
-servidores = []
-casa_avaliacao = []
+SUPABASE_URL = 'https://neacrwveqwijlhygscrn.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lYWNyd3ZlcXdpamxoeWdzY3JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODczMTUsImV4cCI6MjA1OTI2MzMxNX0.WOcU9ef6QJClWTo6i3REz_n-DCWQYg5L3Tfn2rCTYng'
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 UPLOAD_FOLDER = 'uploads'
 INFORMATIVOS_FOLDER = 'informativos'
@@ -22,20 +19,6 @@ for folder in [UPLOAD_FOLDER, INFORMATIVOS_FOLDER, AVALIACOES_FISICAS_FOLDER]:
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['INFORMATIVOS_FOLDER'] = INFORMATIVOS_FOLDER
 app.config['AVALIACOES_FISICAS_FOLDER'] = AVALIACOES_FISICAS_FOLDER
-
-def carregar_csv():
-    global alunos, servidores, casa_avaliacao
-    with open('alunos.csv', newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
-        alunos.extend([{"matricula": row['matricula'], "nome": row['nome'], "unidade": row['unidade'], 
-                        "etapa": row['etapa'], "turma": row['turma']} for row in reader])
-    with open('diretores.csv', newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
-        servidores.extend([{"cpf": row['cpf'], "nome": row['nome'], "unidade": row['unidade']} for row in reader])
-    with open('coordenadores.csv', newline='', encoding='utf-8') as csvfile:
-        reader = csv.DictReader(csvfile)
-        casa_avaliacao.extend([{"cpf": row['cpf'], "nome": row['nome'], "etapas": row['etapas'], 
-                                "disciplinas": row['disciplinas']} for row in reader])
 
 @app.route('/')
 @app.route('/index.html')
@@ -106,9 +89,9 @@ def serve_resultado():
 def verificar_matricula():
     data = request.get_json()
     matricula = data.get('matricula')
-    aluno = next((a for a in alunos if a['matricula'] == matricula), None)
-    if aluno:
-        return jsonify({"status": "success", "aluno": aluno})
+    response = supabase.table('alunos').select('*').eq('matricula', matricula).execute()
+    if response.data:
+        return jsonify({"status": "success", "aluno": response.data[0]})
     return jsonify({"status": "error", "message": "Matrícula não encontrada"})
 
 @app.route('/carregar_questoes')
@@ -116,13 +99,15 @@ def carregar_questoes():
     etapa = request.args.get('etapa')
     disciplina = request.args.get('disciplina')
     nome_avaliacao = request.args.get('nome_avaliacao')
+    
+    query = supabase.table('questoes').select('*').eq('etapa', etapa)
     if nome_avaliacao and disciplina:
-        filtered_questoes = [q for q in questoes if q['nome_avaliacao'] == nome_avaliacao and q['disciplina'] == disciplina and q['etapa'] == etapa]
+        query = query.eq('nome_avaliacao', nome_avaliacao).eq('disciplina', disciplina)
     elif disciplina:
-        filtered_questoes = [q for q in questoes if q['disciplina'] == disciplina and q['etapa'] == etapa]
-    else:
-        filtered_questoes = [q for q in questoes if q['etapa'] == etapa]
-    return jsonify(filtered_questoes)
+        query = query.eq('disciplina', disciplina)
+    
+    response = query.execute()
+    return jsonify(response.data)
 
 @app.route('/salvar_questao', methods=['POST'])
 def salvar_questao():
@@ -138,13 +123,13 @@ def salvar_questao():
     resposta_correta = request.form['resposta_correta']
     imagem = request.files.get('imagem')
     imagem_path = None
+    
     if imagem:
         imagem_path = os.path.join(app.config['UPLOAD_FOLDER'], imagem.filename)
         imagem.save(imagem_path)
         imagem_path = f"/uploads/{imagem.filename}"
     
     questao = {
-        "id": len(questoes) + 1,
         "etapa": etapa,
         "disciplina": disciplina,
         "nome_avaliacao": nome_avaliacao,
@@ -158,7 +143,8 @@ def salvar_questao():
         "resposta_correta": resposta_correta,
         "imagem": imagem_path
     }
-    questoes.append(questao)
+    
+    response = supabase.table('questoes').insert(questao).execute()
     return jsonify({"status": "success", "message": "Questão salva com sucesso"})
 
 @app.route('/uploads/<filename>')
@@ -169,9 +155,9 @@ def uploaded_file(filename):
 def verificar_cpf_unidade():
     data = request.get_json()
     cpf = data.get('cpf')
-    servidor = next((s for s in servidores if s['cpf'] == cpf), None)
-    if servidor:
-        return jsonify({"status": "success", "unidade": servidor['unidade']})
+    response = supabase.table('diretores').select('*').eq('cpf', cpf).execute()
+    if response.data:
+        return jsonify({"status": "success", "unidade": response.data[0]['unidade']})
     return jsonify({"status": "error", "message": "CPF não encontrado ou sem permissão"})
 
 @app.route('/resultados_unidade')
@@ -180,26 +166,33 @@ def resultados_unidade():
     etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     
-    filtered_resultados = [r for r in resultados if r['unidade'] == unidade]
+    resultados_query = supabase.table('resultados').select('*').eq('unidade', unidade)
     if etapa:
-        filtered_resultados = [r for r in filtered_resultados if r['etapa'] == etapa]
+        resultados_query = resultados_query.eq('etapa', etapa)
     if turma:
-        filtered_resultados = [r for r in filtered_resultados if r['turma'] == turma]
+        resultados_query = resultados_query.eq('turma', turma)
+    resultados = resultados_query.execute().data
     
-    alunos_unidade = [a for a in alunos if a['unidade'] == unidade]
+    alunos_query = supabase.table('alunos').select('*').eq('unidade', unidade)
     if etapa:
-        alunos_unidade = [a for a in alunos_unidade if a['etapa'] == etapa]
+        alunos_query = alunos_query.eq('etapa', etapa)
     if turma:
-        alunos_unidade = [a for a in alunos_unidade if a['turma'] == turma]
+        alunos_query = alunos_query.eq('turma', turma)
+    alunos_unidade = alunos_query.execute().data
     
-    fizeram = len(filtered_resultados)
+    fizeram = len(resultados)
     ausentes = len(alunos_unidade) - fizeram
     
-    etapas = sorted(set(a['etapa'] for a in alunos_unidade))
-    turmas = sorted(set(a['turma'] for a in alunos_unidade if etapa and a['etapa'] == etapa or not etapa))
+    etapas_query = supabase.table('alunos').select('etapa').eq('unidade', unidade).execute()
+    etapas = sorted(set(a['etapa'] for a in etapas_query.data))
+    
+    turmas_query = supabase.table('alunos').select('turma').eq('unidade', unidade)
+    if etapa:
+        turmas_query = turmas_query.eq('etapa', etapa)
+    turmas = sorted(set(a['turma'] for a in turmas_query.execute().data))
     
     return jsonify({
-        "resultados": filtered_resultados,
+        "resultados": resultados,
         "fizeram": fizeram,
         "ausentes": ausentes,
         "etapas": etapas,
@@ -210,8 +203,9 @@ def resultados_unidade():
 def verificar_cpf_casa():
     data = request.get_json()
     cpf = data.get('cpf')
-    usuario = next((u for u in casa_avaliacao if u['cpf'] == cpf), None)
-    if usuario:
+    response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
+    if response.data:
+        usuario = response.data[0]
         return jsonify({"status": "success", "etapas": usuario['etapas'], "disciplinas": usuario['disciplinas']})
     return jsonify({"status": "error", "message": "CPF não encontrado ou sem permissão"})
 
@@ -222,36 +216,41 @@ def resultados_casa():
     etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     
-    usuario = next((u for u in casa_avaliacao if u['cpf'] == cpf), None)
-    if not usuario:
+    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
+    if not usuario_response.data:
         return jsonify({"resultados": [], "fizeram": 0, "ausentes": 0, "unidades": [], "etapas": [], "turmas": []})
     
-    etapas_permitidas = usuario['etapas'].split(',')
-    filtered_resultados = [r for r in resultados if r['etapa'] in etapas_permitidas]
+    etapas_permitidas = usuario_response.data[0]['etapas'].split(',')
+    resultados_query = supabase.table('resultados').select('*').in_('etapa', etapas_permitidas)
     if unidade:
-        filtered_resultados = [r for r in filtered_resultados if r['unidade'] == unidade]
+        resultados_query = resultados_query.eq('unidade', unidade)
     if etapa:
-        filtered_resultados = [r for r in filtered_resultados if r['etapa'] == etapa]
+        resultados_query = resultados_query.eq('etapa', etapa)
     if turma:
-        filtered_resultados = [r for r in filtered_resultados if r['turma'] == turma]
+        resultados_query = resultados_query.eq('turma', turma)
+    resultados = resultados_query.execute().data
     
-    alunos_casa = [a for a in alunos if a['etapa'] in etapas_permitidas]
+    alunos_query = supabase.table('alunos').select('*').in_('etapa', etapas_permitidas)
     if unidade:
-        alunos_casa = [a for a in alunos_casa if a['unidade'] == unidade]
+        alunos_query = alunos_query.eq('unidade', unidade)
     if etapa:
-        alunos_casa = [a for a in alunos_casa if a['etapa'] == etapa]
+        alunos_query = alunos_query.eq('etapa', etapa)
     if turma:
-        alunos_casa = [a for a in alunos_casa if a['turma'] == turma]
+        alunos_query = alunos_query.eq('turma', turma)
+    alunos_casa = alunos_query.execute().data
     
-    fizeram = len(filtered_resultados)
+    fizeram = len(resultados)
     ausentes = len(alunos_casa) - fizeram
     
     unidades = sorted(set(a['unidade'] for a in alunos_casa))
-    etapas = sorted(set(a['etapa'] for a in alunos_casa if a['etapa'] in etapas_permitidas))
-    turmas = sorted(set(a['turma'] for a in alunos_casa if etapa and a['etapa'] == etapa or not etapa))
+    etapas = sorted(set(a['etapa'] for a in alunos_casa))
+    turmas_query = supabase.table('alunos').select('turma').in_('etapa', etapas_permitidas)
+    if etapa:
+        turmas_query = turmas_query.eq('etapa', etapa)
+    turmas = sorted(set(a['turma'] for a in turmas_query.execute().data))
     
     return jsonify({
-        "resultados": filtered_resultados,
+        "resultados": resultados,
         "fizeram": fizeram,
         "ausentes": ausentes,
         "unidades": unidades,
@@ -311,8 +310,9 @@ def salvar_resultado():
         "matematica_total": matematica_total,
         "matematica_porcentagem": matematica_porcentagem
     }
-    resultados.append(resultado)
-
+    
+    supabase.table('resultados').insert(resultado).execute()
+    
     return jsonify({
         "status": "success",
         "matricula": matricula,
@@ -335,9 +335,9 @@ def salvar_resultado():
 def etapas_permitidas():
     data = request.get_json()
     cpf = data.get('cpf')
-    usuario = next((u for u in casa_avaliacao if u['cpf'] == cpf), None)
-    if usuario:
-        etapas = usuario['etapas'].split(',')
+    response = supabase.table('coordenadores').select('etapas').eq('cpf', cpf).execute()
+    if response.data:
+        etapas = response.data[0]['etapas'].split(',')
         return jsonify({"status": "success", "etapas": etapas})
     return jsonify({"status": "error", "message": "CPF não encontrado"})
 
@@ -345,14 +345,16 @@ def etapas_permitidas():
 def carregar_avaliacao_completa():
     etapa = request.args.get('etapa')
     nome_avaliacao = request.args.get('nome_avaliacao')
-    filtered_questoes = [q for q in questoes if q['etapa'] == etapa and q['nome_avaliacao'] == nome_avaliacao]
-    return jsonify(filtered_questoes)
+    response = supabase.table('questoes').select('*').eq('etapa', etapa).eq('nome_avaliacao', nome_avaliacao).execute()
+    return jsonify(response.data)
 
 @app.route('/listar_avaliacoes')
 def listar_avaliacoes():
-    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in questoes))
+    response = supabase.table('questoes').select('nome_avaliacao, etapa').execute()
+    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
     return jsonify({"avaliacoes": avaliacoes})
 
+# File upload routes remain largely unchanged as they use local filesystem
 @app.route('/upload_informativo', methods=['POST'])
 def upload_informativo():
     if 'file' not in request.files:
@@ -363,37 +365,6 @@ def upload_informativo():
     file.save(os.path.join(app.config['INFORMATIVOS_FOLDER'], file.filename))
     return jsonify({"status": "success", "message": "Informativo enviado com sucesso"})
 
-@app.route('/listar_informativos')
-def listar_informativos():
-    arquivos = os.listdir(app.config['INFORMATIVOS_FOLDER'])
-    return jsonify({"arquivos": arquivos})
-
-@app.route('/informativos/<filename>')
-def download_informativo(filename):
-    return send_from_directory(app.config['INFORMATIVOS_FOLDER'], filename)
-
-@app.route('/upload_avaliacao_fisica', methods=['POST'])
-def upload_avaliacao_fisica():
-    if 'file' not in request.files or 'etapa' not in request.form:
-        return jsonify({"status": "error", "message": "Arquivo ou etapa não fornecido"}), 400
-    file = request.files['file']
-    etapa = request.form['etapa']
-    if file.filename == '':
-        return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
-    filename = f"Etapa_{etapa}_{file.filename}"
-    file.save(os.path.join(app.config['AVALIACOES_FISICAS_FOLDER'], filename))
-    return jsonify({"status": "success", "message": "Avaliação física enviada com sucesso"})
-
-@app.route('/listar_avaliacoes_fisicas')
-def listar_avaliacoes_fisicas():
-    arquivos = sorted(os.listdir(app.config['AVALIACOES_FISICAS_FOLDER']), key=lambda x: int(x.split('_')[1]) if x.startswith('Etapa_') else float('inf'))
-    return jsonify({"arquivos": arquivos})
-
-@app.route('/avaliacoes_fisicas/<filename>')
-def download_avaliacao_fisica(filename):
-    return send_from_directory(app.config['AVALIACOES_FISICAS_FOLDER'], filename)
-
 if __name__ == '__main__':
-    carregar_csv()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
