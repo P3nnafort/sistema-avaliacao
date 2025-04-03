@@ -319,6 +319,11 @@ def carregar_avaliacao_completa():
     filtered_questoes = [q for q in questoes if q['etapa'] == etapa and q['nome_avaliacao'] == nome_avaliacao]
     return jsonify(filtered_questoes)
 
+@app.route('/listar_avaliacoes')
+def listar_avaliacoes():
+    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in questoes))
+    return jsonify({"avaliacoes": avaliacoes})
+
 if __name__ == '__main__':
     carregar_csv()
     port = int(os.environ.get("PORT", 5000))
