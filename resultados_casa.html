@@ -96,7 +96,6 @@
             white-space: nowrap; 
         }
     </style>
-    <!-- Incluindo SheetJS via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -145,7 +144,7 @@
         let unidadesDisponiveis = [];
         let etapasDisponiveis = [];
         let turmasDisponiveis = [];
-        let resultadosAtuais = []; // Armazena os resultados pra exportação
+        let resultadosAtuais = [];
 
         async function carregarResultadosFiltrados() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -155,7 +154,7 @@
             const turma = document.getElementById("filtroTurma").value;
 
             try {
-                let url = `http://127.0.0.1:5000/resultados_casa?cpf=${cpfAtual}`;
+                let url = `/resultados_casa?cpf=${cpfAtual}`;
                 if (unidade) url += `&unidade=${encodeURIComponent(unidade)}`;
                 if (etapa) url += `&etapa=${etapa}`;
                 if (turma && etapa) url += `&turma=${turma}`;
@@ -168,7 +167,7 @@
                 atualizarFiltros();
 
                 maxQuestoes = Math.max(...data.resultados.map(r => Object.keys(r.respostas).length), 0);
-                resultadosAtuais = data.resultados; // Armazena pra exportação
+                resultadosAtuais = data.resultados;
 
                 const thead = document.getElementById("cabecalhoResultados");
                 let cabecalho = "<tr><th>Matrícula</th><th>Nome</th><th>Unidade</th><th>Etapa</th><th>Turma</th>";

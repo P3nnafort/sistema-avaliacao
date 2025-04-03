@@ -61,17 +61,16 @@
             align-items: center; 
             max-width: 600px; 
         }
-        input, button, textarea, select { 
+        label, input, textarea, select, button { 
             margin: 10px; 
-            padding: 5px; 
             width: 100%; 
             max-width: 300px; 
         }
-        .opcao { 
-            text-align: left; 
+        textarea { 
+            height: 100px; 
         }
-        label { 
-            margin-bottom: 5px; 
+        input[type="file"] { 
+            width: auto; 
         }
     </style>
 </head>
@@ -91,97 +90,84 @@
 
     <div class="content">
         <label>Etapa:</label>
-        <select id="etapa">
-            <option value="1">Etapa 1</option>
-            <option value="2">Etapa 2</option>
-            <option value="3">Etapa 3</option>
-        </select>
+        <input type="text" id="etapa" placeholder="Ex.: 1"><br>
         <label>Disciplina:</label>
         <select id="disciplina">
             <option value="Língua Portuguesa">Língua Portuguesa</option>
             <option value="Matemática">Matemática</option>
-        </select>
-        <label>Pergunta (Parte 1):</label>
-        <textarea id="pergunta" placeholder="Digite a primeira parte da pergunta aqui"></textarea>
-        <label>Imagem (opcional):</label>
-        <input type="file" id="imagem" accept="image/*">
-        <label>Pergunta (Parte 2):</label>
-        <textarea id="pergunta_complementar" placeholder="Digite a parte complementar da pergunta aqui"></textarea>
+        </select><br>
+        <label>Pergunta:</label>
+        <textarea id="pergunta" placeholder="Digite a pergunta"></textarea><br>
+        <label>Pergunta complementar (opcional):</label>
+        <textarea id="pergunta_complementar" placeholder="Digite a pergunta complementar (opcional)"></textarea><br>
         <label>Opção A:</label>
-        <input type="text" id="opcaoA" class="opcao" placeholder="Digite a opção A">
+        <input type="text" id="opcao_a" placeholder="Digite a opção A"><br>
         <label>Opção B:</label>
-        <input type="text" id="opcaoB" class="opcao" placeholder="Digite a opção B">
+        <input type="text" id="opcao_b" placeholder="Digite a opção B"><br>
         <label>Opção C:</label>
-        <input type="text" id="opcaoC" class="opcao" placeholder="Digite a opção C">
+        <input type="text" id="opcao_c" placeholder="Digite a opção C"><br>
         <label>Opção D:</label>
-        <input type="text" id="opcaoD" class="opcao" placeholder="Digite a opção D">
+        <input type="text" id="opcao_d" placeholder="Digite a opção D"><br>
         <label>Resposta correta:</label>
-        <select id="respostaCorreta">
+        <select id="resposta_correta">
             <option value="a">A</option>
             <option value="b">B</option>
             <option value="c">C</option>
             <option value="d">D</option>
-        </select>
+        </select><br>
+        <label>Imagem (opcional):</label>
+        <input type="file" id="imagem" accept="image/*"><br>
         <button onclick="salvarQuestao()">Salvar Questão</button>
-        <button onclick="finalizarCriacao()">Finalizar Prova</button>
-        <button onclick="window.location.href='index.html'">Voltar</button>
+        <button onclick="finalizarProva()">Finalizar Prova</button>
+        <br><button onclick="window.location.href='/casa_avaliacao.html'">Voltar</button>
     </div>
 
     <script>
-        // Salva uma nova questão no servidor
         async function salvarQuestao() {
             const etapa = document.getElementById("etapa").value;
             const disciplina = document.getElementById("disciplina").value;
             const pergunta = document.getElementById("pergunta").value;
-            const perguntaComplementar = document.getElementById("pergunta_complementar").value;
-            const opcaoA = document.getElementById("opcaoA").value;
-            const opcaoB = document.getElementById("opcaoB").value;
-            const opcaoC = document.getElementById("opcaoC").value;
-            const opcaoD = document.getElementById("opcaoD").value;
-            const respostaCorreta = document.getElementById("respostaCorreta").value;
+            const pergunta_complementar = document.getElementById("pergunta_complementar").value;
+            const opcao_a = document.getElementById("opcao_a").value;
+            const opcao_b = document.getElementById("opcao_b").value;
+            const opcao_c = document.getElementById("opcao_c").value;
+            const opcao_d = document.getElementById("opcao_d").value;
+            const resposta_correta = document.getElementById("resposta_correta").value;
             const imagem = document.getElementById("imagem").files[0];
 
-            // Verifica se os campos obrigatórios estão preenchidos
-            if (!pergunta || !opcaoA || !opcaoB || !opcaoC || !opcaoD) {
-                alert("Preencha todos os campos obrigatórios (Pergunta Parte 1 e opções)!");
-                return;
-            }
-
-            // Cria um objeto FormData pra enviar os dados, incluindo a imagem
             const formData = new FormData();
             formData.append("etapa", etapa);
             formData.append("disciplina", disciplina);
             formData.append("pergunta", pergunta);
-            formData.append("pergunta_complementar", perguntaComplementar || "");
-            formData.append("opcao_a", opcaoA);
-            formData.append("opcao_b", opcaoB);
-            formData.append("opcao_c", opcaoC);
-            formData.append("opcao_d", opcaoD);
-            formData.append("resposta_correta", respostaCorreta);
+            formData.append("pergunta_complementar", pergunta_complementar);
+            formData.append("opcao_a", opcao_a);
+            formData.append("opcao_b", opcao_b);
+            formData.append("opcao_c", opcao_c);
+            formData.append("opcao_d", opcao_d);
+            formData.append("resposta_correta", resposta_correta);
             if (imagem) {
                 formData.append("imagem", imagem);
             }
 
             try {
-                // Envia os dados pro servidor
-                const response = await fetch("http://127.0.0.1:5000/salvar_questao", {
+                const response = await fetch("/salvar_questao", {
                     method: "POST",
                     body: formData
                 });
-                const result = await response.json();
-                if (result.status === "success") {
+                const data = await response.json();
+
+                if (data.status === "success") {
                     alert("Questão salva com sucesso!");
-                    // Limpa os campos após salvar
                     document.getElementById("pergunta").value = "";
                     document.getElementById("pergunta_complementar").value = "";
-                    document.getElementById("opcaoA").value = "";
-                    document.getElementById("opcaoB").value = "";
-                    document.getElementById("opcaoC").value = "";
-                    document.getElementById("opcaoD").value = "";
+                    document.getElementById("opcao_a").value = "";
+                    document.getElementById("opcao_b").value = "";
+                    document.getElementById("opcao_c").value = "";
+                    document.getElementById("opcao_d").value = "";
+                    document.getElementById("resposta_correta").value = "a";
                     document.getElementById("imagem").value = "";
-                    document.getElementById("respostaCorreta").value = "a";
                 } else {
-                    alert("Erro ao salvar questão: " + result.message);
+                    alert("Erro ao salvar questão!");
                 }
             } catch (error) {
                 console.error("Erro:", error);
@@ -189,13 +175,10 @@
             }
         }
 
-        // Redireciona pra visualização da prova após confirmação
-        function finalizarCriacao() {
+        function finalizarProva() {
             const etapa = document.getElementById("etapa").value;
             const disciplina = document.getElementById("disciplina").value;
-            if (confirm("Deseja finalizar e visualizar a prova?")) {
-                window.location.href = `visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`;
-            }
+            window.location.href = `/visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`;
         }
     </script>
 </body>

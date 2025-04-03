@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+Flask==2.3.2
+flask-cors==3.0.10<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -120,7 +121,7 @@
             }
 
             try {
-                const response = await fetch("http://127.0.0.1:5000/verificar_matricula", {
+                const response = await fetch("/verificar_matricula", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ matricula: matricula })
@@ -149,7 +150,7 @@
 
         async function carregarQuestoes() {
             const etapa = alunoAtual.etapa;
-            const response = await fetch(`http://127.0.0.1:5000/carregar_questoes?etapa=${etapa}`);
+            const response = await fetch(`/carregar_questoes?etapa=${etapa}`);
             const todasQuestoes = await response.json();
 
             const portugues = todasQuestoes.filter(q => q.disciplina === "Língua Portuguesa");
@@ -194,7 +195,7 @@
 
         async function finalizarProva() {
             try {
-                const response = await fetch("http://127.0.0.1:5000/salvar_resultado", {
+                const response = await fetch("/salvar_resultado", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

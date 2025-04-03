@@ -93,13 +93,13 @@
         <p id="mensagemErro" class="erro">O CPF deve ter exatamente 11 números!</p>
         <p id="cpfInvalido" class="erro">CPF não encontrado ou sem permissão!</p>
         <button onclick="verificarCpf()">Acessar</button>
-        <br><button onclick="window.location.href='index.html'">Voltar</button>
+        <br><button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
     <div class="content" id="opcoes" style="display: none;">
-        <button onclick="window.location.href='criar_prova.html'">Criar Avaliações</button>
+        <button onclick="window.location.href='/criar_prova.html'">Criar Avaliações</button>
         <button onclick="visualizarResultados()">Visualizar Resultados</button>
-        <br><button onclick="window.location.href='index.html'">Voltar</button>
+        <br><button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
     <script>
@@ -117,7 +117,7 @@
             }
 
             try {
-                const response = await fetch("http://127.0.0.1:5000/verificar_cpf_casa", {
+                const response = await fetch("/verificar_cpf_casa", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ cpf: cpf })
@@ -139,7 +139,7 @@
         }
 
         function visualizarResultados() {
-            window.location.href = `resultados_casa.html?cpf=${cpfValido}`;
+            window.location.href = `/resultados_casa.html?cpf=${cpfValido}`;
         }
     </script>
 </body>

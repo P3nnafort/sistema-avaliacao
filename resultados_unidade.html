@@ -164,7 +164,7 @@
             }
 
             try {
-                const response = await fetch("http://127.0.0.1:5000/verificar_cpf_unidade", {
+                const response = await fetch("/verificar_cpf_unidade", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ cpf: cpf })
@@ -190,9 +190,9 @@
             const turma = document.getElementById("filtroTurma").value;
 
             try {
-                let url = `http://127.0.0.1:5000/resultados_unidade?unidade=${encodeURIComponent(unidadeAtual)}`;
+                let url = `/resultados_unidade?unidade=${encodeURIComponent(unidadeAtual)}`;
                 if (etapa) url += `&etapa=${etapa}`;
-                if (turma && etapa) url += `&turma=${turma}`; // Só aplica turma se etapa estiver selecionada
+                if (turma && etapa) url += `&turma=${turma}`;
                 const response = await fetch(url);
                 const data = await response.json();
 
@@ -257,7 +257,7 @@
                 turmaSelect.disabled = true;
             }
 
-            carregarResultadosFiltrados(); // Chama a atualização dos resultados
+            carregarResultadosFiltrados();
         }
     </script>
 </body>

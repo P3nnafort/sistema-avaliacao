@@ -101,7 +101,7 @@
             const disciplina = urlParams.get("disciplina");
 
             try {
-                const response = await fetch(`http://127.0.0.1:5000/carregar_questoes?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`);
+                const response = await fetch(`/carregar_questoes?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`);
                 const questoes = await response.json();
 
                 const provaDiv = document.getElementById("prova");
