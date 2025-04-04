@@ -118,9 +118,11 @@
                     listaDiv.innerHTML = "<p>Nenhum informativo disponível.</p>";
                 } else {
                     let html = "<h2>Informativos Disponíveis</h2>";
-                    data.arquivos.forEach(arquivo => {
-                        html += `<a href="/informativos/${arquivo}" target="_blank">${arquivo}</a>`;
-                    });
+                    for (const arquivo of data.arquivos) {
+                        const urlResponse = await fetch(`/informativos/${arquivo}`);
+                        const urlData = await urlResponse.json();
+                        html += `<a href="${urlData.url}" target="_blank">${arquivo}</a>`;
+                    }
                     listaDiv.innerHTML = html;
                 }
             } catch (error) {

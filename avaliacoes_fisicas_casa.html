@@ -172,9 +172,11 @@
                     listaDiv.innerHTML = "<p>Nenhuma avaliação física disponível.</p>";
                 } else {
                     let html = "<h2>Avaliações Físicas Disponíveis</h2>";
-                    data.arquivos.forEach(arquivo => {
-                        html += `<a href="/avaliacoes_fisicas/${arquivo}" target="_blank">${arquivo}</a>`;
-                    });
+                    for (const arquivo of data.arquivos) {
+                        const urlResponse = await fetch(`/avaliacoes_fisicas/${arquivo}`);
+                        const urlData = await urlResponse.json();
+                        html += `<a href="${urlData.url}" target="_blank">${arquivo}</a>`;
+                    }
                     listaDiv.innerHTML = html;
                 }
             } catch (error) {
