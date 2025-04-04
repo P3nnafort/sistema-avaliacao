@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualizar Ocorrências</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        select, button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 300px; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+        }
+        th, td { 
+            border: 1px solid #ccc; 
+            padding: 8px; 
+            text-align: center; 
+        }
+        th { 
+            background-color: #f0f0f0; 
+        }
+        a { 
+            color: #007bff; 
+            text-decoration: none; 
+        }
+        a:hover { 
+            text-decoration: underline; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Visualizar Ocorrências</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <div id="filtrosUnidade" style="display: none;">
+            <select id="etapaUnidade">
+                <option value="">Todas as Etapas</option>
+            </select>
+            <select id="turmaUnidade">
+                <option value="">Todas as Turmas</option>
+            </select>
+        </div>
+        <div id="filtrosCasa" style="display: none;">
+            <select id="unidadeCasa">
+                <option value="">Todas as Unidades</option>
+            </select>
+            <select id="etapaCasa">
+                <option value="">Todas as Etapas</option>
+            </select>
+            <select id="turmaCasa">
+                <option value="">Todas as Turmas</option>
+            </select>
+        </div>
+        <button onclick="carregarOcorrencias()">Filtrar</button>
+        <table id="tabelaOcorrencias">
+            <thead>
+                <tr>
+                    <th>Turma</th>
+                    <th>Unidade</th>
+                    <th>Data</th>
+                    <th>Download</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaCorpo"></tbody>
+        </table>
+        <button onclick="voltar()">Voltar</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const tipo = urlParams.get("tipo"); // "unidade" ou "casa"
+        const cpf = urlParams.get("cpf");
+        let unidadeAtual = null;
+
+        async function inicializarFiltros() {
+            if (tipo === "unidade") {
+                document.getElementById("filtrosUnidade").style.display = "block";
+                try {
+                    const response = await fetch("/verificar_cpf_unidade", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ cpf: cpf })
+                    });
+                    const data = await response.json();
+                    if (data.status === "success") {
+                        unidadeAtual = data.unidade;
+                        carregarFiltrosUnidade();
+                    } else {
+                        alert("Erro ao carregar unidade.");
+                    }
+                } catch (error) {
+                    console.error("Erro:", error);
+                    alert("Erro ao conectar ao servidor.");
+                }
+            } else if (tipo === "casa") {
+                document.getElementById("filtrosCasa").style.display = "block";
+                carregarFiltrosCasa();
+            }
+        }
+
+        async function carregarFiltrosUnidade() {
+            try {
+                const response = await fetch(`/resultados_unidade?unidade=${unidadeAtual}`);
+                const data = await response.json();
+                const etapaSelect = document.getElementById("etapaUnidade");
+                const turmaSelect = document.getElementById("turmaUnidade");
+                etapaSelect.innerHTML = '<option value="">Todas as Etapas</option>';
+                turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
+                data.etapas.forEach(etapa => {
+                    etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
+                });
+                data.turmas.forEach(turma => {
+                    turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+                carregarOcorrencias();
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar filtros.");
+            }
+        }
+
+        async function carregarFiltrosCasa() {
+            try {
+                const response = await fetch("/resultados_casa?cpf=" + cpf);
+                const data = await response.json();
+                const unidadeSelect = document.getElementById("unidadeCasa");
+                const etapaSelect = document.getElementById("etapaCasa");
+                const turmaSelect = document.getElementById("turmaCasa");
+                unidadeSelect.innerHTML = '<option value="">Todas as Unidades</option>';
+                etapaSelect.innerHTML = '<option value="">Todas as Etapas</option>';
+                turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
+                data.unidades.forEach(unidade => {
+                    unidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
+                });
+                data.etapas.forEach(etapa => {
+                    etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
+                });
+                data.turmas.forEach(turma => {
+                    turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+                carregarOcorrencias();
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar filtros.");
+            }
+        }
+
+        async function carregarOcorrencias() {
+            let url = `/listar_ocorrencias?tipo=${tipo}`;
+            if (tipo === "unidade") {
+                url += `&unidade=${unidadeAtual}`;
+                const etapa = document.getElementById("etapaUnidade").value;
+                const turma = document.getElementById("turmaUnidade").value;
+                if (etapa) url += `&etapa=${etapa}`;
+                if (turma) url += `&turma=${turma}`;
+            } else if (tipo === "casa") {
+                const unidade = document.getElementById("unidadeCasa").value;
+                const etapa = document.getElementById("etapaCasa").value;
+                const turma = document.getElementById("turmaCasa").value;
+                if (unidade) url += `&unidade=${unidade}`;
+                if (etapa) url += `&etapa=${etapa}`;
+                if (turma) url += `&turma=${turma}`;
+            }
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const corpo = document.getElementById("tabelaCorpo");
+                if (data.ocorrencias.length === 0) {
+                    corpo.innerHTML = "<tr><td colspan='4'>Nenhuma ocorrência encontrada.</td></tr>";
+                } else {
+                    let html = "";
+                    data.ocorrencias.forEach(ocorrencia => {
+                        html += `
+                            <tr>
+                                <td>${ocorrencia.turma}</td>
+                                <td>${ocorrencia.unidade}</td>
+                                <td>${new Date(ocorrencia.data).toLocaleString()}</td>
+                                <td><a href="${ocorrencia.pdf_url}" target="_blank">Download</a></td>
+                            </tr>
+                        `;
+                    });
+                    corpo.innerHTML = html;
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar ocorrências.");
+            }
+        }
+
+        function voltar() {
+            if (tipo === "unidade") {
+                window.location.href = `/opcoes_unidade.html?cpf=${cpf}`;
+            } else if (tipo === "casa") {
+                window.location.href = `/casa_avaliacao.html?cpf=${cpf}`;
+            }
+        }
+
+        window.onload = inicializarFiltros;
+    </script>
+</body>
+</html>

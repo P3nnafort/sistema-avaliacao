@@ -100,7 +100,6 @@ def verificar_matricula():
     response = supabase.table('alunos').select('*').eq('matricula', matricula).execute()
     if response.data:
         aluno = response.data[0]
-        # Verificar estado da prova
         turma_response = supabase.table('presencas').select('estado_prova').eq('turma', aluno['turma']).order('data', desc=True).limit(1).execute()
         if turma_response.data:
             estado = turma_response.data[0]['estado_prova']
@@ -438,14 +437,12 @@ def listar_avaliacoes_fisicas():
     )
     return jsonify({"arquivos": arquivos})
 
-# Novas rotas para lista de presença e ATA
 @app.route('/lista_presenca', methods=['POST'])
 def lista_presenca():
     data = request.get_json()
     senha = data.get('senha')  # Senha é o identificador da turma
     response = supabase.table('alunos').select('nome, matricula, unidade, etapa, turma').eq('turma', senha).execute()
     if response.data:
-        # Verificar se já existe uma lista pra essa turma hoje
         today = datetime.now().strftime('%Y-%m-%d')
         existing = supabase.table('presencas').select('id').eq('turma', senha).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
         if not existing.data:
@@ -458,13 +455,13 @@ def lista_presenca():
 def salvar_presenca():
     data = request.get_json()
     turma = data.get('turma')
-    presencas = data.get('presencas', [])  # Lista de {matricula, presenca}
-    estado = data.get('estado')  # "iniciada" ou "finalizada"
+    presencas = data.get('presencas', [])
+    estado = data.get('estado')
     
     today = datetime.now().strftime('%Y-%m-%d')
     for presenca in presencas:
         supabase.table('presencas').update({"presenca": presenca['presenca'], "estado_prova": estado}).eq('turma', turma).eq('matricula', presenca['matricula']).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
-    if estado == "finalizada" and not presencas:  # Finalizar sem alterar presenças
+    if estado == "finalizada" and not presencas:
         supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
     
     return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
@@ -476,7 +473,6 @@ def salvar_ocorrencia():
     unidade = data.get('unidade')
     texto = data.get('texto', "Sem ocorrência")
     
-    # Gerar PDF
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     c.drawString(100, 750, f"ATA de Ocorrências - Turma: {turma}")
@@ -492,12 +488,10 @@ def salvar_ocorrencia():
     c.save()
     buffer.seek(0)
     
-    # Fazer upload pro Supabase Storage
     pdf_filename = f"ocorrencia_{turma}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     supabase.storage.from_('ocorrencias').upload(pdf_filename, buffer.read())
     pdf_url = supabase.storage.from_('ocorrencias').get_public_url(pdf_filename)
     
-    # Salvar metadados
     ocorrencia = {"turma": turma, "unidade": unidade, "data": "now()", "texto": texto, "pdf_url": pdf_url}
     supabase.table('ocorrencias').insert(ocorrencia).execute()
     
@@ -506,7 +500,20 @@ def salvar_ocorrencia():
 @app.route('/listar_ocorrencias')
 def listar_ocorrencias():
     unidade = request.args.get('unidade')
-    response = supabase.table('ocorrencias').select('turma, data, pdf_url').eq('unidade', unidade).execute()
+    etapa = request.args.get('etapa')
+    turma = request.args.get('turma')
+    tipo = request.args.get('tipo')
+    
+    query = supabase.table('ocorrencias').select('turma, unidade, data, pdf_url')
+    
+    if tipo == "unidade" and unidade:
+        query = query.eq('unidade', unidade)
+    if etapa:
+        query = query.eq('etapa', etapa)
+    if turma:
+        query = query.eq('turma', turma)
+    
+    response = query.execute()
     return jsonify({"ocorrencias": response.data})
 
 if __name__ == '__main__':

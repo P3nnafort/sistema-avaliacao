@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Opções da Unidade</title>
+    <title>Opções - Unidade</title>
     <style>
         body { 
             text-align: center; 
@@ -72,7 +72,7 @@
 <body>
     <header>
         <div class="titulo">
-            <h1>Unidade - Opções</h1>
+            <h1>Opções - Unidade</h1>
         </div>
     </header>
 
@@ -83,10 +83,11 @@
         <img src="/static/logo2.png" alt="Logo 2">
     </div>
 
-    <div class="content">
+    <div class="content" id="opcoes">
         <button onclick="visualizarResultados()">Visualizar Resultados</button>
         <button onclick="visualizarAvaliacoes()">Visualizar Avaliações</button>
-        <button onclick="visualizarInformativos()">Informativos</button>
+        <button onclick="visualizarInformativos()">Visualizar Informativos</button>
+        <button onclick="visualizarOcorrencias()">Visualizar Ocorrências</button>
         <br><button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
@@ -104,6 +105,10 @@
 
         function visualizarInformativos() {
             window.location.href = `/informativos_unidade.html?cpf=${cpf}`;
+        }
+
+        function visualizarOcorrencias() {
+            window.location.href = `/visualizar_ocorrencias.html?tipo=unidade&cpf=${cpf}`;
         }
     </script>
 </body>
