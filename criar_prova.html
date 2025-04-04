@@ -149,92 +149,82 @@
                         etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
                     });
                 } else {
-                    alert("Erro ao carregar etapas permitidas: " + data.message);
+                    alert("Erro ao carregar etapas permitidas.");
                 }
             } catch (error) {
-                console.error("Erro ao carregar etapas:", error);
-                alert("Erro ao conectar ao servidor. Tente novamente mais tarde.");
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
             }
         }
 
         async function salvarQuestao() {
-    const nome_avaliacao = document.getElementById("nome_avaliacao").value.trim();
-    const etapa = document.getElementById("etapa").value;
-    const disciplina = document.getElementById("disciplina").value;
-    const pergunta = document.getElementById("pergunta").value.trim();
-    const pergunta_complementar = document.getElementById("pergunta_complementar").value.trim();
-    const opcao_a = document.getElementById("opcao_a").value.trim();
-    const opcao_b = document.getElementById("opcao_b").value.trim();
-    const opcao_c = document.getElementById("opcao_c").value.trim();
-    const opcao_d = document.getElementById("opcao_d").value.trim();
-    const resposta_correta = document.getElementById("resposta_correta").value;
-    const imagem = document.getElementById("imagem").files[0];
-
-    // Validação de campos obrigatórios
-    if (!nome_avaliacao || !etapa || !disciplina || !pergunta || !opcao_a || !opcao_b || !opcao_c || !opcao_d) {
-        alert("Por favor, preencha todos os campos obrigatórios (Nome da Avaliação, Etapa, Disciplina, Pergunta e todas as opções).");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("nome_avaliacao", nome_avaliacao);
-    formData.append("etapa", etapa);
-    formData.append("disciplina", disciplina);
-    formData.append("pergunta", pergunta);
-    formData.append("pergunta_complementar", pergunta_complementar);
-    formData.append("opcao_a", opcao_a);
-    formData.append("opcao_b", opcao_b);
-    formData.append("opcao_c", opcao_c);
-    formData.append("opcao_d", opcao_d);
-    formData.append("resposta_correta", resposta_correta);
-    if (imagem) {
-        formData.append("imagem", imagem);
-    }
-
-    try {
-        const response = await fetch("/salvar_questao", {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Erro ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-
-        if (data.status === "success") {
-            alert("Questão salva com sucesso!");
-            // Limpar os campos após salvar
-            document.getElementById("pergunta").value = "";
-            document.getElementById("pergunta_complementar").value = "";
-            document.getElementById("opcao_a").value = "";
-            document.getElementById("opcao_b").value = "";
-            document.getElementById("opcao_c").value = "";
-            document.getElementById("opcao_d").value = "";
-            document.getElementById("resposta_correta").value = "a";
-            document.getElementById("imagem").value = "";
-        } else {
-            alert("Erro ao salvar questão: " + (data.message || "Erro desconhecido"));
-        }
-    } catch (error) {
-        console.error("Erro ao salvar questão:", error);
-        alert("Erro ao conectar ao servidor: " + error.message);
-    }
-}
-
-        function finalizarProva() {
-            const nome_avaliacao = document.getElementById("nome_avaliacao").value.trim();
+            const nome_avaliacao = document.getElementById("nome_avaliacao").value;
             const etapa = document.getElementById("etapa").value;
             const disciplina = document.getElementById("disciplina").value;
+            const pergunta = document.getElementById("pergunta").value;
+            const pergunta_complementar = document.getElementById("pergunta_complementar").value;
+            const opcao_a = document.getElementById("opcao_a").value;
+            const opcao_b = document.getElementById("opcao_b").value;
+            const opcao_c = document.getElementById("opcao_c").value;
+            const opcao_d = document.getElementById("opcao_d").value;
+            const resposta_correta = document.getElementById("resposta_correta").value;
+            const imagem = document.getElementById("imagem").files[0];
 
-            if (!nome_avaliacao || !etapa || !disciplina) {
-                alert("Por favor, preencha Nome da Avaliação, Etapa e Disciplina antes de finalizar.");
+            if (!nome_avaliacao || !etapa || !pergunta || !opcao_a || !opcao_b || !opcao_c || !opcao_d) {
+                alert("Por favor, preencha todos os campos obrigatórios.");
                 return;
             }
 
-            window.location.href = `/visualizar_prova.html?etapa=${encodeURIComponent(etapa)}&disciplina=${encodeURIComponent(disciplina)}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`;
+            const formData = new FormData();
+            formData.append("nome_avaliacao", nome_avaliacao);
+            formData.append("etapa", etapa);
+            formData.append("disciplina", disciplina);
+            formData.append("pergunta", pergunta);
+            formData.append("pergunta_complementar", pergunta_complementar);
+            formData.append("opcao_a", opcao_a);
+            formData.append("opcao_b", opcao_b);
+            formData.append("opcao_c", opcao_c);
+            formData.append("opcao_d", opcao_d);
+            formData.append("resposta_correta", resposta_correta);
+            if (imagem) {
+                formData.append("imagem", imagem);
+            }
+
+            try {
+                const response = await fetch("/salvar_questao", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Questão salva com sucesso!");
+                    // Resetar todos os campos
+                    document.getElementById("nome_avaliacao").value = "";
+                    document.getElementById("etapa").value = "";
+                    document.getElementById("disciplina").value = "Língua Portuguesa";
+                    document.getElementById("pergunta").value = "";
+                    document.getElementById("pergunta_complementar").value = "";
+                    document.getElementById("opcao_a").value = "";
+                    document.getElementById("opcao_b").value = "";
+                    document.getElementById("opcao_c").value = "";
+                    document.getElementById("opcao_d").value = "";
+                    document.getElementById("resposta_correta").value = "a";
+                    document.getElementById("imagem").value = "";
+                } else {
+                    alert("Erro ao salvar questão!");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor: " + error.message);
+            }
+        }
+
+        function finalizarProva() {
+            const nome_avaliacao = document.getElementById("nome_avaliacao").value;
+            const etapa = document.getElementById("etapa").value;
+            const disciplina = document.getElementById("disciplina").value;
+            window.location.href = `/visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`;
         }
 
         window.onload = carregarEtapas;

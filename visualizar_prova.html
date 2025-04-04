@@ -77,7 +77,7 @@
 <body>
     <header>
         <div class="titulo">
-            <h1>Prévia da Prova</h1>
+            <h1>Visualizar Prova</h1>
         </div>
     </header>
 
@@ -90,31 +90,32 @@
 
     <div class="content">
         <div id="prova"></div>
-        <button onclick="window.location.href='/criar_prova.html'">Adicionar Mais Questões</button>
-        <button onclick="window.location.href='/index.html'">Voltar ao Início</button>
+        <button onclick="window.location.href='/casa_avaliacao.html'">Voltar</button>
     </div>
 
     <script>
         async function carregarProva() {
             const urlParams = new URLSearchParams(window.location.search);
-            const etapa = urlParams.get("etapa");
-            const disciplina = urlParams.get("disciplina");
+            const etapa = urlParams.get('etapa');
+            const disciplina = urlParams.get('disciplina');
+            const nome_avaliacao = urlParams.get('nome_avaliacao');
 
             try {
-                const response = await fetch(`/carregar_questoes?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}`);
+                const response = await fetch(`/carregar_questoes?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`);
                 const questoes = await response.json();
 
                 const provaDiv = document.getElementById("prova");
                 if (questoes.length === 0) {
-                    provaDiv.innerHTML = "<p>Nenhuma questão cadastrada para esta etapa e disciplina.</p>";
+                    provaDiv.innerHTML = "<p>Nenhuma questão cadastrada para esta etapa, disciplina e nome da avaliação.</p>";
                 } else {
                     let html = "";
-                    questoes.forEach((questao, index) => {
+                    for (let i = 0; i < questoes.length; i++) {
+                        const questao = questoes[i];
                         let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;">` : "";
                         let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
                         html += `
                             <div class="questao">
-                                <h2>Questão ${index + 1}</h2>
+                                <h2>Questão ${i + 1} (${questao.disciplina})</h2>
                                 <p>${questao.pergunta}</p>
                                 ${imagemHtml}
                                 ${complementoHtml}
@@ -125,7 +126,7 @@
                                 <p><strong>Resposta correta:</strong> ${questao.resposta_correta.toUpperCase()}</p>
                             </div>
                         `;
-                    });
+                    }
                     provaDiv.innerHTML = html;
                 }
             } catch (error) {
@@ -134,7 +135,7 @@
             }
         }
 
-        carregarProva();
+        window.onload = carregarProva;
     </script>
 </body>
 </html>

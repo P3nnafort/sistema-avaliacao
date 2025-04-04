@@ -1,18 +1,20 @@
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import os
 from supabase import create_client, Client
+import os
 
 app = Flask(__name__)
 CORS(app)
 
+# Configuração do Supabase
 SUPABASE_URL = 'https://neacrwveqwijlhygscrn.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lYWNyd3ZlcXdpamxoeWdzY3JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODczMTUsImV4cCI6MjA1OTI2MzMxNX0.WOcU9ef6QJClWTo6i3REz_n-DCWQYg5L3Tfn2rCTYng'
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Pastas locais temporárias (ainda necessárias pro upload)
 UPLOAD_FOLDER = 'uploads'
 INFORMATIVOS_FOLDER = 'informativos'
-AVALIACOES_FISICAS_FOLDER = 'avaliacoes_fisicas'
+AVALIACOES_FISICAS_FOLDER = 'avaliacoes_fisicas'  # Mantém local como está, mas bucket muda
 for folder in [UPLOAD_FOLDER, INFORMATIVOS_FOLDER, AVALIACOES_FISICAS_FOLDER]:
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -20,6 +22,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['INFORMATIVOS_FOLDER'] = INFORMATIVOS_FOLDER
 app.config['AVALIACOES_FISICAS_FOLDER'] = AVALIACOES_FISICAS_FOLDER
 
+# Rotas de páginas (inalteradas, apenas listando pra contexto)
 @app.route('/')
 @app.route('/index.html')
 def serve_index():
@@ -85,6 +88,118 @@ def serve_avaliacoes_fisicas_casa():
 def serve_resultado():
     return send_file('resultado.html')
 
+# Rotas de API (apenas as ajustadas pra Supabase Storage)
+@app.route('/salvar_questao', methods=['POST'])
+def salvar_questao():
+    etapa = request.form['etapa']
+    disciplina = request.form['disciplina']
+    nome_avaliacao = request.form['nome_avaliacao']
+    pergunta = request.form['pergunta']
+    pergunta_complementar = request.form.get('pergunta_complementar', '')
+    opcao_a = request.form['opcao_a']
+    opcao_b = request.form['opcao_b']
+    opcao_c = request.form['opcao_c']
+    opcao_d = request.form['opcao_d']
+    resposta_correta = request.form['resposta_correta']
+    imagem = request.files.get('imagem')
+    imagem_path = None
+    
+    if imagem:
+        temp_path = os.path.join('uploads', imagem.filename)
+        imagem.save(temp_path)
+        with open(temp_path, 'rb') as f:
+            upload_response = supabase.storage.from_('uploads').upload(imagem.filename, f)
+        os.remove(temp_path)
+        imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
+    
+    questao = {
+        "etapa": etapa,
+        "disciplina": disciplina,
+        "nome_avaliacao": nome_avaliacao,
+        "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
+        "pergunta": pergunta,
+        "pergunta_complementar": pergunta_complementar,
+        "opcao_a": opcao_a,
+        "opcao_b": opcao_b,
+        "opcao_c": opcao_c,
+        "opcao_d": opcao_d,
+        "resposta_correta": resposta_correta,
+        "imagem": imagem_path
+    }
+    
+    response = supabase.table('questoes').insert(questao).execute()
+    return jsonify({"status": "success", "message": "Questão salva com sucesso"})
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    url = supabase.storage.from_('uploads').get_public_url(filename)
+    return jsonify({"url": url})
+
+@app.route('/upload_informativo', methods=['POST'])
+def upload_informativo():
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "Nenhum arquivo enviado"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
+    
+    temp_path = os.path.join('informativos', file.filename)
+    file.save(temp_path)
+    with open(temp_path, 'rb') as f:
+        upload_response = supabase.storage.from_('informativos').upload(file.filename, f)
+    os.remove(temp_path)
+    file_url = supabase.storage.from_('informativos').get_public_url(file.filename)
+    
+    informativo = {"filename": file.filename, "url": file_url}
+    supabase.table('informativos').insert(informativo).execute()
+    
+    return jsonify({"status": "success", "message": "Informativo enviado com sucesso"})
+
+@app.route('/listar_informativos')
+def listar_informativos():
+    response = supabase.table('informativos').select('filename').execute()
+    arquivos = [item['filename'] for item in response.data]
+    return jsonify({"arquivos": arquivos})
+
+@app.route('/informativos/<filename>')
+def download_informativo(filename):
+    url = supabase.storage.from_('informativos').get_public_url(filename)
+    return jsonify({"url": url})
+
+@app.route('/upload_avaliacao_fisica', methods=['POST'])
+def upload_avaliacao_fisica():
+    if 'file' not in request.files or 'etapa' not in request.form:
+        return jsonify({"status": "error", "message": "Arquivo ou etapa não fornecido"}), 400
+    file = request.files['file']
+    etapa = request.form['etapa']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
+    
+    filename = f"Etapa-{etapa}-{file.filename}"  # Ajustado pra evitar "_"
+    temp_path = os.path.join('avaliacoes_fisicas', filename)
+    file.save(temp_path)
+    with open(temp_path, 'rb') as f:
+        upload_response = supabase.storage.from_('avaliacoes-fisicas').upload(filename, f)
+    os.remove(temp_path)
+    file_url = supabase.storage.from_('avaliacoes-fisicas').get_public_url(filename)
+    
+    avaliacao_fisica = {"filename": filename, "etapa": etapa, "url": file_url}
+    supabase.table('avaliacoes_fisicas').insert(avaliacao_fisica).execute()
+    
+    return jsonify({"status": "success", "message": "Avaliação física enviada com sucesso"})
+
+@app.route('/listar_avaliacoes_fisicas')
+def listar_avaliacoes_fisicas():
+    response = supabase.table('avaliacoes_fisicas').select('filename').execute()
+    arquivos = sorted([item['filename'] for item in response.data], key=lambda x: int(x.split('-')[1]) if x.startswith('Etapa-') else float('inf'))
+    return jsonify({"arquivos": arquivos})
+
+@app.route('/avaliacoes_fisicas/<filename>')
+def download_avaliacao_fisica(filename):
+    url = supabase.storage.from_('avaliacoes-fisicas').get_public_url(filename)
+    return jsonify({"url": url})
+
+# Outras rotas permanecem inalteradas
 @app.route('/verificar_matricula', methods=['POST'])
 def verificar_matricula():
     data = request.get_json()
@@ -108,48 +223,6 @@ def carregar_questoes():
     
     response = query.execute()
     return jsonify(response.data)
-
-@app.route('/salvar_questao', methods=['POST'])
-def salvar_questao():
-    etapa = request.form['etapa']
-    disciplina = request.form['disciplina']
-    nome_avaliacao = request.form['nome_avaliacao']
-    pergunta = request.form['pergunta']
-    pergunta_complementar = request.form.get('pergunta_complementar', '')
-    opcao_a = request.form['opcao_a']
-    opcao_b = request.form['opcao_b']
-    opcao_c = request.form['opcao_c']
-    opcao_d = request.form['opcao_d']
-    resposta_correta = request.form['resposta_correta']
-    imagem = request.files.get('imagem')
-    imagem_path = None
-    
-    if imagem:
-        imagem_path = os.path.join(app.config['UPLOAD_FOLDER'], imagem.filename)
-        imagem.save(imagem_path)
-        imagem_path = f"/uploads/{imagem.filename}"
-    
-    questao = {
-        "etapa": etapa,
-        "disciplina": disciplina,
-        "nome_avaliacao": nome_avaliacao,
-        "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
-        "pergunta": pergunta,
-        "pergunta_complementar": pergunta_complementar,
-        "opcao_a": opcao_a,
-        "opcao_b": opcao_b,
-        "opcao_c": opcao_c,
-        "opcao_d": opcao_d,
-        "resposta_correta": resposta_correta,
-        "imagem": imagem_path
-    }
-    
-    response = supabase.table('questoes').insert(questao).execute()
-    return jsonify({"status": "success", "message": "Questão salva com sucesso"})
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/verificar_cpf_unidade', methods=['POST'])
 def verificar_cpf_unidade():
@@ -353,39 +426,6 @@ def listar_avaliacoes():
     response = supabase.table('questoes').select('nome_avaliacao, etapa').execute()
     avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
     return jsonify({"avaliacoes": avaliacoes})
-
-# File upload routes remain largely unchanged as they use local filesystem
-@app.route('/upload_informativo', methods=['POST'])
-def upload_informativo():
-    if 'file' not in request.files:
-        return jsonify({"status": "error", "message": "Nenhum arquivo enviado"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
-    file.save(os.path.join(app.config['INFORMATIVOS_FOLDER'], file.filename))
-    return jsonify({"status": "success", "message": "Informativo enviado com sucesso"})
-
-@app.route('/listar_informativos')
-def listar_informativos():
-    arquivos = os.listdir(app.config['INFORMATIVOS_FOLDER'])
-    return jsonify({"arquivos": arquivos})
-
-@app.route('/informativos/<filename>')
-def download_informativo(filename):
-    return send_from_directory(app.config['INFORMATIVOS_FOLDER'], filename)
-
-@app.route('/upload_avaliacao_fisica', methods=['POST'])
-def upload_avaliacao_fisica():
-    return jsonify({"status": "success", "message": "Avaliação física enviada com sucesso"})
-
-@app.route('/listar_avaliacoes_fisicas')
-def listar_avaliacoes_fisicas():
-    arquivos = sorted(os.listdir(app.config['AVALIACOES_FISICAS_FOLDER']), key=lambda x: int(x.split('_')[1]) if x.startswith('Etapa_') else float('inf'))
-    return jsonify({"arquivos": arquivos})
-
-@app.route('/avaliacoes_fisicas/<filename>')
-def download_avaliacao_fisica(filename):
-    return send_from_directory(app.config['AVALIACOES_FISICAS_FOLDER'], filename)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
