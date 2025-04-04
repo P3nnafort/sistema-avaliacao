@@ -469,8 +469,10 @@ def lista_presenca():
 
 @app.route('/salvar_presenca', methods=['POST'])
 def salvar_presenca():
+    print("Rota /salvar_presenca chamada")  # Debug inicial
     try:
         data = request.get_json()
+        print(f"Dados recebidos: {data}")  # Debug
         if not data:
             print("Erro: Nenhum dado recebido na requisição")  # Debug
             return jsonify({"status": "error", "message": "Nenhum dado enviado"}), 400
@@ -500,6 +502,7 @@ def salvar_presenca():
             print(f"Finalizando prova sem presenças")  # Debug
             supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
         
+        print("Presenças salvas com sucesso")  # Debug
         return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
     except Exception as e:
         print(f"Erro interno ao salvar presenças: {str(e)}")  # Debug
