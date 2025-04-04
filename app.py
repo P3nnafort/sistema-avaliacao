@@ -2,9 +2,14 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
+import logging
 
 app = Flask(__name__)
 CORS(app)
+
+# Configuração de logs
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Configuração do Supabase
 SUPABASE_URL = 'https://neacrwveqwijlhygscrn.supabase.co'
@@ -103,7 +108,7 @@ def carregar_questoes():
     etapa = request.args.get('etapa')
     disciplina = request.args.get('disciplina')
     nome_avaliacao = request.args.get('nome_avaliacao')
-    cpf = request.args.get('cpf')  # Verificar se é Casa da Avaliação
+    cpf = request.args.get('cpf')
     
     query = supabase.table('questoes').select('*').eq('etapa', etapa)
     if nome_avaliacao and disciplina:
@@ -111,7 +116,6 @@ def carregar_questoes():
     elif disciplina:
         query = query.eq('disciplina', disciplina)
     
-    # Se não for Casa da Avaliação, só retorna questões disponíveis
     if cpf:
         usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
         if not usuario_response.data:
@@ -158,7 +162,7 @@ def salvar_questao():
         "opcao_d": opcao_d,
         "resposta_correta": resposta_correta,
         "imagem": imagem_path,
-        "disponivel": False  # Novo padrão: questões começam indisponíveis
+        "disponivel": False
     }
     
     response = supabase.table('questoes').insert(questao).execute()
@@ -369,7 +373,6 @@ def carregar_avaliacao_completa():
 @app.route('/listar_avaliacoes')
 def listar_avaliacoes():
     response = supabase.table('questoes').select('nome_avaliacao, etapa, disponivel').execute()
-    # Agrupar por nome_avaliacao e etapa, usando o primeiro disponivel encontrado
     avaliacoes_dict = {}
     for q in response.data:
         chave = f"{q['nome_avaliacao']} - {q['etapa']}"
@@ -510,32 +513,54 @@ def excluir_questao():
 @app.route('/alterar_disponibilidade_avaliacao', methods=['POST'])
 def alterar_disponibilidade_avaliacao():
     data = request.get_json()
+    logger.debug(f"Recebido pedido para alterar disponibilidade: {data}")
     nome_avaliacao = data.get('nome_avaliacao')
     etapa = data.get('etapa')
     disponivel = data.get('disponivel')
     cpf = request.args.get('cpf')
 
+    if not all([nome_avaliacao, etapa, disponivel is not None, cpf]):
+        logger.error("Parâmetros obrigatórios ausentes")
+        return jsonify({"status": "error", "message": "Parâmetros obrigatórios ausentes"}), 400
+
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
+        logger.error(f"CPF {cpf} não autorizado")
         return jsonify({"status": "error", "message": "Permissão negada"}), 403
 
-    response = supabase.table('questoes').update({'disponivel': disponivel}).eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
-    return jsonify({"status": "success", "message": f"Avaliação {'disponibilizada' if disponivel else 'indisponibilizada'} com sucesso"})
+    try:
+        response = supabase.table('questoes').update({'disponivel': disponivel}).eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
+        logger.debug(f"Atualização de disponibilidade concluída: {response}")
+        return jsonify({"status": "success", "message": f"Avaliação {'disponibilizada' if disponivel else 'indisponibilizada'} com sucesso"})
+    except Exception as e:
+        logger.error(f"Erro ao atualizar disponibilidade: {str(e)}")
+        return jsonify({"status": "error", "message": "Erro ao atualizar disponibilidade"}), 500
 
 @app.route('/excluir_avaliacao', methods=['POST'])
 def excluir_avaliacao():
     data = request.get_json()
+    logger.debug(f"Recebido pedido para excluir avaliação: {data}")
     nome_avaliacao = data.get('nome_avaliacao')
     etapa = data.get('etapa')
     cpf = request.args.get('cpf')
 
+    if not all([nome_avaliacao, etapa, cpf]):
+        logger.error("Parâmetros obrigatórios ausentes")
+        return jsonify({"status": "error", "message": "Parâmetros obrigatórios ausentes"}), 400
+
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
+        logger.error(f"CPF {cpf} não autorizado")
         return jsonify({"status": "error", "message": "Permissão negada"}), 403
 
-    response = supabase.table('questoes').delete().eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
-    return jsonify({"status": "success", "message": "Avaliação excluída com sucesso"})
+    try:
+        response = supabase.table('questoes').delete().eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
+        logger.debug(f"Exclusão de avaliação concluída: {response}")
+        return jsonify({"status": "success", "message": "Avaliação excluída com sucesso"})
+    except Exception as e:
+        logger.error(f"Erro ao excluir avaliação: {str(e)}")
+        return jsonify({"status": "error", "message": "Erro ao excluir avaliação"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=True)
