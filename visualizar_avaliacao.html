@@ -64,17 +64,25 @@
         .avaliacao-lista { 
             margin: 20px 0; 
             text-align: left; 
-        }
-        .avaliacao-lista button { 
-            display: block; 
             width: 100%; 
+        }
+        .avaliacao-item { 
+            display: flex; 
+            align-items: center; 
             margin: 5px 0; 
             padding: 10px; 
             background-color: #f0f0f0; 
             border: 1px solid #ccc; 
+        }
+        .avaliacao-item button { 
+            margin: 0 5px; 
+            padding: 5px; 
+            width: 30px; 
+            height: 30px; 
+            font-size: 16px; 
             cursor: pointer; 
         }
-        .avaliacao-lista button:hover { 
+        .avaliacao-item button:hover { 
             background-color: #e0e0e0; 
         }
         #prova { 
@@ -135,7 +143,7 @@
         <button onclick="window.location.href='/index.html'">Voltar ao Início</button>
     </div>
 
-    <!-- Modal para Edição -->
+    <!-- Modal para Edição de Questão -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <h2>Editar Questão</h2>
@@ -175,6 +183,19 @@
         </div>
     </div>
 
+    <!-- Modal para Edição de Avaliação -->
+    <div id="editAvaliacaoModal" class="modal">
+        <div class="modal-content">
+            <h2>Editar Avaliação</h2>
+            <input type="hidden" id="editAvaliacaoNome">
+            <input type="hidden" id="editAvaliacaoEtapa">
+            <label>Novo Nome da Avaliação:</label>
+            <input type="text" id="editAvaliacaoNovoNome"><br>
+            <button onclick="salvarEdicaoAvaliacao()">Salvar</button>
+            <button onclick="fecharModalAvaliacao()">Cancelar</button>
+        </div>
+    </div>
+
     <script>
         let questoes = [];
         let questaoAtual = 0;
@@ -203,8 +224,18 @@
                 const listaDiv = document.getElementById("avaliacaoLista");
                 let html = "<h2>Selecione uma Avaliação</h2>";
                 data.avaliacoes.forEach(avaliacao => {
-                    const [nome_avaliacao, etapa] = avaliacao.split(" - ");
-                    html += `<button onclick="carregarAvaliacao('${nome_avaliacao}', '${etapa}')">${avaliacao}</button>`;
+                    const [nome_avaliacao, etapa] = avaliacao.nome.split(" - ");
+                    const disponivel = avaliacao.disponivel;
+                    html += `
+                        <div class="avaliacao-item">
+                            <button style="flex-grow: 1; width: auto;" onclick="carregarAvaliacao('${nome_avaliacao}', '${etapa}')">${avaliacao.nome}</button>
+                            ${isCasaAvaliacao ? `
+                                <button title="Tornar ${disponivel ? 'Indisponível' : 'Disponível'}" onclick="alterarDisponibilidade('${nome_avaliacao}', '${etapa}', ${!disponivel})">${disponivel ? '🚫' : '✅'}</button>
+                                <button title="Excluir Avaliação" onclick="excluirAvaliacao('${nome_avaliacao}', '${etapa}')">🗑️</button>
+                                <button title="Editar Avaliação" onclick="abrirModalEdicaoAvaliacao('${nome_avaliacao}', '${etapa}')">✏️</button>
+                            ` : ''}
+                        </div>
+                    `;
                 });
                 listaDiv.innerHTML = html;
             } catch (error) {
@@ -356,8 +387,97 @@
             }
         }
 
+        async function alterarDisponibilidade(nome_avaliacao, etapa, disponivel) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cpf = urlParams.get("cpf");
+
+            try {
+                const response = await fetch(`/alterar_disponibilidade_avaliacao?cpf=${cpf}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome_avaliacao, etapa, disponivel })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert(data.message);
+                    carregarListaAvaliacoes();
+                } else {
+                    alert(data.message || "Erro ao alterar disponibilidade.");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        async function excluirAvaliacao(nome_avaliacao, etapa) {
+            if (!confirm("Tem certeza que deseja excluir esta avaliação? Todas as questões associadas serão removidas.")) return;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const cpf = urlParams.get("cpf");
+
+            try {
+                const response = await fetch(`/excluir_avaliacao?cpf=${cpf}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome_avaliacao, etapa })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Avaliação excluída com sucesso!");
+                    carregarListaAvaliacoes();
+                } else {
+                    alert(data.message || "Erro ao excluir avaliação.");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        function abrirModalEdicaoAvaliacao(nome_avaliacao, etapa) {
+            document.getElementById("editAvaliacaoNome").value = nome_avaliacao;
+            document.getElementById("editAvaliacaoEtapa").value = etapa;
+            document.getElementById("editAvaliacaoNovoNome").value = nome_avaliacao;
+            document.getElementById("editAvaliacaoModal").style.display = "flex";
+        }
+
+        async function salvarEdicaoAvaliacao() {
+            const nome_avaliacao = document.getElementById("editAvaliacaoNome").value;
+            const etapa = document.getElementById("editAvaliacaoEtapa").value;
+            const novo_nome = document.getElementById("editAvaliacaoNovoNome").value;
+            const urlParams = new URLSearchParams(window.location.search);
+            const cpf = urlParams.get("cpf");
+
+            try {
+                const response = await fetch(`/editar_avaliacao?cpf=${cpf}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome_avaliacao, etapa, novo_nome })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Nome da avaliação editado com sucesso!");
+                    fecharModalAvaliacao();
+                    carregarListaAvaliacoes();
+                } else {
+                    alert(data.message || "Erro ao editar nome da avaliação.");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
         function fecharModal() {
             document.getElementById("editModal").style.display = "none";
+        }
+
+        function fecharModalAvaliacao() {
+            document.getElementById("editAvaliacaoModal").style.display = "none";
         }
 
         carregarListaAvaliacoes();

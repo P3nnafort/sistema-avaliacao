@@ -11,7 +11,7 @@ SUPABASE_URL = 'https://neacrwveqwijlhygscrn.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lYWNyd3ZlcXdpamxoeWdzY3JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODczMTUsImV4cCI6MjA1OTI2MzMxNX0.WOcU9ef6QJClWTo6i3REz_n-DCWQYg5L3Tfn2rCTYng'
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Pastas locais temporárias (ainda necessárias pro upload)
+# Pastas locais temporárias
 UPLOAD_FOLDER = 'uploads'
 INFORMATIVOS_FOLDER = 'informativos'
 AVALIACOES_FISICAS_FOLDER = 'avaliacoes_fisicas'
@@ -103,6 +103,7 @@ def carregar_questoes():
     etapa = request.args.get('etapa')
     disciplina = request.args.get('disciplina')
     nome_avaliacao = request.args.get('nome_avaliacao')
+    cpf = request.args.get('cpf')  # Verificar se é Casa da Avaliação
     
     query = supabase.table('questoes').select('*').eq('etapa', etapa)
     if nome_avaliacao and disciplina:
@@ -110,6 +111,14 @@ def carregar_questoes():
     elif disciplina:
         query = query.eq('disciplina', disciplina)
     
+    # Se não for Casa da Avaliação, só retorna questões disponíveis
+    if cpf:
+        usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
+        if not usuario_response.data:
+            query = query.eq('disponivel', True)
+    else:
+        query = query.eq('disponivel', True)
+
     response = query.execute()
     return jsonify(response.data)
 
@@ -148,7 +157,8 @@ def salvar_questao():
         "opcao_c": opcao_c,
         "opcao_d": opcao_d,
         "resposta_correta": resposta_correta,
-        "imagem": imagem_path
+        "imagem": imagem_path,
+        "disponivel": False  # Novo padrão: questões começam indisponíveis
     }
     
     response = supabase.table('questoes').insert(questao).execute()
@@ -358,8 +368,14 @@ def carregar_avaliacao_completa():
 
 @app.route('/listar_avaliacoes')
 def listar_avaliacoes():
-    response = supabase.table('questoes').select('nome_avaliacao, etapa').execute()
-    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
+    response = supabase.table('questoes').select('nome_avaliacao, etapa, disponivel').execute()
+    # Agrupar por nome_avaliacao e etapa, usando o primeiro disponivel encontrado
+    avaliacoes_dict = {}
+    for q in response.data:
+        chave = f"{q['nome_avaliacao']} - {q['etapa']}"
+        if chave not in avaliacoes_dict:
+            avaliacoes_dict[chave] = q['disponivel']
+    avaliacoes = [{"nome": chave, "disponivel": disponivel} for chave, disponivel in avaliacoes_dict.items()]
     return jsonify({"avaliacoes": avaliacoes})
 
 @app.route('/upload_informativo', methods=['POST'])
@@ -430,9 +446,8 @@ def download_avaliacao_fisica(filename):
 def editar_questao():
     data = request.form
     questao_id = data.get('id')
-    cpf = request.args.get('cpf')  # Verificar CPF da Casa da Avaliação
+    cpf = request.args.get('cpf')
 
-    # Verificar se é Casa da Avaliação
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
         return jsonify({"status": "error", "message": "Permissão negada"}), 403
@@ -450,7 +465,6 @@ def editar_questao():
     imagem = request.files.get('imagem')
     imagem_path = None
 
-    # Buscar questão existente pra pegar a imagem atual
     existing_questao = supabase.table('questoes').select('imagem').eq('id', questao_id).execute().data[0]
     imagem_path = existing_questao['imagem']
 
@@ -484,9 +498,8 @@ def editar_questao():
 def excluir_questao():
     data = request.get_json()
     questao_id = data.get('id')
-    cpf = request.args.get('cpf')  # Verificar CPF da Casa da Avaliação
+    cpf = request.args.get('cpf')
 
-    # Verificar se é Casa da Avaliação
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
         return jsonify({"status": "error", "message": "Permissão negada"}), 403
@@ -494,6 +507,35 @@ def excluir_questao():
     response = supabase.table('questoes').delete().eq('id', questao_id).execute()
     return jsonify({"status": "success", "message": "Questão excluída com sucesso"})
 
+@app.route('/alterar_disponibilidade_avaliacao', methods=['POST'])
+def alterar_disponibilidade_avaliacao():
+    data = request.get_json()
+    nome_avaliacao = data.get('nome_avaliacao')
+    etapa = data.get('etapa')
+    disponivel = data.get('disponivel')
+    cpf = request.args.get('cpf')
+
+    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
+    if not usuario_response.data:
+        return jsonify({"status": "error", "message": "Permissão negada"}), 403
+
+    response = supabase.table('questoes').update({'disponivel': disponivel}).eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
+    return jsonify({"status": "success", "message": f"Avaliação {'disponibilizada' if disponivel else 'indisponibilizada'} com sucesso"})
+
+@app.route('/excluir_avaliacao', methods=['POST'])
+def excluir_avaliacao():
+    data = request.get_json()
+    nome_avaliacao = data.get('nome_avaliacao')
+    etapa = data.get('etapa')
+    cpf = request.args.get('cpf')
+
+    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
+    if not usuario_response.data:
+        return jsonify({"status": "error", "message": "Permissão negada"}), 403
+
+    response = supabase.table('questoes').delete().eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
+    return jsonify({"status": "success", "message": "Avaliação excluída com sucesso"})
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=False)
