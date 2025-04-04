@@ -104,13 +104,17 @@ def salvar_questao():
     imagem = request.files.get('imagem')
     imagem_path = None
     
-    if imagem:
-        temp_path = os.path.join('uploads', imagem.filename)
-        imagem.save(temp_path)
-        with open(temp_path, 'rb') as f:
-            upload_response = supabase.storage.from_('uploads').upload(imagem.filename, f)
-        os.remove(temp_path)
-        imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
+    # Em /salvar_questao (exemplo, ajuste similar em outras rotas)
+if imagem:
+    temp_path = os.path.join('uploads', imagem.filename)
+    imagem.save(temp_path)
+    with open(temp_path, 'rb') as f:
+        supabase.storage.from_('uploads').upload(imagem.filename, f, file_options={"content-type": imagem.mimetype})
+    os.remove(temp_path)
+    imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
+    # Garantir que a URL é pública
+    if not imagem_path.startswith('https://'):
+        imagem_path = f"{SUPABASE_URL}/storage/v1/object/public/uploads/{imagem.filename}"
     
     questao = {
         "etapa": etapa,
