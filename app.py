@@ -469,19 +469,41 @@ def lista_presenca():
 
 @app.route('/salvar_presenca', methods=['POST'])
 def salvar_presenca():
-    data = request.get_json()
-    turma = data.get('turma')
-    unidade = data.get('unidade')
-    presencas = data.get('presencas', [])
-    estado = data.get('estado')
-    
-    today = datetime.now().strftime('%Y-%m-%d')
-    for presenca in presencas:
-        supabase.table('presencas').update({"presenca": presenca['presenca'], "estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).eq('matricula', presenca['matricula']).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
-    if estado == "finalizada" and not presencas:
-        supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
-    
-    return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
+    try:
+        data = request.get_json()
+        if not data:
+            print("Erro: Nenhum dado recebido na requisição")  # Debug
+            return jsonify({"status": "error", "message": "Nenhum dado enviado"}), 400
+        
+        turma = data.get('turma')
+        unidade = data.get('unidade')
+        presencas = data.get('presencas', [])
+        estado = data.get('estado')
+        
+        if not turma or not unidade or not estado:
+            print(f"Erro: Dados incompletos - Turma: {turma}, Unidade: {unidade}, Estado: {estado}")  # Debug
+            return jsonify({"status": "error", "message": "Dados incompletos (turma, unidade ou estado faltando)"}), 400
+
+        print(f"Salvando presenças - Turma: {turma}, Unidade: {unidade}, Estado: {estado}, Presenças: {len(presencas)}")  # Debug
+        
+        today = datetime.now().strftime('%Y-%m-%d')
+        for presenca in presencas:
+            matricula = presenca.get('matricula')
+            presenca_valor = presenca.get('presenca')
+            if not matricula or not presenca_valor:
+                print(f"Erro: Presença inválida - Matrícula: {matricula}, Presença: {presenca_valor}")  # Debug
+                return jsonify({"status": "error", "message": "Dados de presença inválidos"}), 400
+            print(f"Atualizando matrícula: {matricula} com presenca: {presenca_valor}")  # Debug
+            supabase.table('presencas').update({"presenca": presenca_valor, "estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).eq('matricula', matricula).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        
+        if estado == "finalizada" and not presencas:
+            print(f"Finalizando prova sem presenças")  # Debug
+            supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        
+        return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
+    except Exception as e:
+        print(f"Erro interno ao salvar presenças: {str(e)}")  # Debug
+        return jsonify({"status": "error", "message": f"Erro interno: {str(e)}"}), 500
 
 @app.route('/salvar_ocorrencia', methods=['POST'])
 def salvar_ocorrencia():
