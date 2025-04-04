@@ -440,21 +440,24 @@ def listar_avaliacoes_fisicas():
 @app.route('/lista_presenca', methods=['POST'])
 def lista_presenca():
     data = request.get_json()
-    senha = data.get('senha')  # Senha no formato TURMA_UNIDADEID (ex.: "600_1")
+    senha = data.get('senha')
+    print(f"Senha recebida: {senha}")  # Debug
     try:
         turma, unidade_id = senha.split('_')
         unidade_id = int(unidade_id)
+        print(f"Turma: {turma}, Unidade ID: {unidade_id}")  # Debug
     except ValueError:
         return jsonify({"status": "error", "message": "Senha inválida. Use o formato TURMA_UNIDADEID (ex.: 600_1)"})
 
-    # Verificar se a unidade existe
     unidade_response = supabase.table('unidades').select('nome').eq('id', unidade_id).execute()
     if not unidade_response.data:
+        print(f"Unidade ID {unidade_id} não encontrada")  # Debug
         return jsonify({"status": "error", "message": "Unidade não encontrada"})
 
     unidade_nome = unidade_response.data[0]['nome']
-    # Buscar alunos com a turma e unidade corretas
+    print(f"Unidade encontrada: {unidade_nome}")  # Debug
     response = supabase.table('alunos').select('nome, matricula, unidade, etapa, turma').eq('turma', turma).eq('unidade', unidade_nome).execute()
+    print(f"Alunos encontrados: {len(response.data) if response.data else 0}")  # Debug
     if response.data:
         today = datetime.now().strftime('%Y-%m-%d')
         existing = supabase.table('presencas').select('id').eq('turma', turma).eq('unidade', unidade_nome).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
