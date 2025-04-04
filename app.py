@@ -2,30 +2,17 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
-import logging
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 
-# Configuração de logs
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-# Configuração do Supabase
 SUPABASE_URL = 'https://neacrwveqwijlhygscrn.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lYWNyd3ZlcXdpamxoeWdzY3JuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM2ODczMTUsImV4cCI6MjA1OTI2MzMxNX0.WOcU9ef6QJClWTo6i3REz_n-DCWQYg5L3Tfn2rCTYng'
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# Pastas locais temporárias
-UPLOAD_FOLDER = 'uploads'
-INFORMATIVOS_FOLDER = 'informativos'
-AVALIACOES_FISICAS_FOLDER = 'avaliacoes_fisicas'
-for folder in [UPLOAD_FOLDER, INFORMATIVOS_FOLDER, AVALIACOES_FISICAS_FOLDER]:
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['INFORMATIVOS_FOLDER'] = INFORMATIVOS_FOLDER
-app.config['AVALIACOES_FISICAS_FOLDER'] = AVALIACOES_FISICAS_FOLDER
 
 # Rotas de páginas
 @app.route('/')
@@ -93,6 +80,18 @@ def serve_avaliacoes_fisicas_casa():
 def serve_resultado():
     return send_file('resultado.html')
 
+@app.route('/lista_presenca.html')
+def serve_lista_presenca():
+    return send_file('lista_presenca.html')
+
+@app.route('/ata_ocorrencias.html')
+def serve_ata_ocorrencias():
+    return send_file('ata_ocorrencias.html')
+
+@app.route('/visualizar_ocorrencias.html')
+def serve_visualizar_ocorrencias():
+    return send_file('visualizar_ocorrencias.html')
+
 # Rotas de API
 @app.route('/verificar_matricula', methods=['POST'])
 def verificar_matricula():
@@ -100,7 +99,18 @@ def verificar_matricula():
     matricula = data.get('matricula')
     response = supabase.table('alunos').select('*').eq('matricula', matricula).execute()
     if response.data:
-        return jsonify({"status": "success", "aluno": response.data[0]})
+        aluno = response.data[0]
+        # Verificar estado da prova
+        turma_response = supabase.table('presencas').select('estado_prova').eq('turma', aluno['turma']).order('data', desc=True).limit(1).execute()
+        if turma_response.data:
+            estado = turma_response.data[0]['estado_prova']
+            if estado == 'pendente':
+                return jsonify({"status": "error", "message": "Esperar o aplicador iniciar a prova"})
+            elif estado == 'iniciada':
+                resultado_response = supabase.table('resultados').select('matricula').eq('matricula', matricula).execute()
+                if resultado_response.data:
+                    return jsonify({"status": "error", "message": "Aguarde a prova finalizar"})
+        return jsonify({"status": "success", "aluno": aluno})
     return jsonify({"status": "error", "message": "Matrícula não encontrada"})
 
 @app.route('/carregar_questoes')
@@ -108,7 +118,6 @@ def carregar_questoes():
     etapa = request.args.get('etapa')
     disciplina = request.args.get('disciplina')
     nome_avaliacao = request.args.get('nome_avaliacao')
-    cpf = request.args.get('cpf')
     
     query = supabase.table('questoes').select('*').eq('etapa', etapa)
     if nome_avaliacao and disciplina:
@@ -116,13 +125,6 @@ def carregar_questoes():
     elif disciplina:
         query = query.eq('disciplina', disciplina)
     
-    if cpf:
-        usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
-        if not usuario_response.data:
-            query = query.eq('disponivel', True)
-    else:
-        query = query.eq('disponivel', True)
-
     response = query.execute()
     return jsonify(response.data)
 
@@ -142,10 +144,13 @@ def salvar_questao():
     imagem_path = None
     
     if imagem:
-        temp_path = os.path.join('uploads', imagem.filename)
+        temp_dir = 'uploads'
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+        temp_path = os.path.join(temp_dir, imagem.filename)
         imagem.save(temp_path)
         with open(temp_path, 'rb') as f:
-            supabase.storage.from_('uploads').upload(imagem.filename, f, file_options={"content-type": imagem.mimetype})
+            supabase.storage.from_('uploads').upload(imagem.filename, f)
         os.remove(temp_path)
         imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
     
@@ -161,17 +166,11 @@ def salvar_questao():
         "opcao_c": opcao_c,
         "opcao_d": opcao_d,
         "resposta_correta": resposta_correta,
-        "imagem": imagem_path,
-        "disponivel": False
+        "imagem": imagem_path
     }
     
     response = supabase.table('questoes').insert(questao).execute()
     return jsonify({"status": "success", "message": "Questão salva com sucesso"})
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    url = supabase.storage.from_('uploads').get_public_url(filename)
-    return jsonify({"url": url})
 
 @app.route('/verificar_cpf_unidade', methods=['POST'])
 def verificar_cpf_unidade():
@@ -372,13 +371,8 @@ def carregar_avaliacao_completa():
 
 @app.route('/listar_avaliacoes')
 def listar_avaliacoes():
-    response = supabase.table('questoes').select('nome_avaliacao, etapa, disponivel').execute()
-    avaliacoes_dict = {}
-    for q in response.data:
-        chave = f"{q['nome_avaliacao']} - {q['etapa']}"
-        if chave not in avaliacoes_dict:
-            avaliacoes_dict[chave] = q['disponivel']
-    avaliacoes = [{"nome": chave, "disponivel": disponivel} for chave, disponivel in avaliacoes_dict.items()]
+    response = supabase.table('questoes').select('nome_avaliacao, etapa').execute()
+    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
     return jsonify({"avaliacoes": avaliacoes})
 
 @app.route('/upload_informativo', methods=['POST'])
@@ -389,10 +383,13 @@ def upload_informativo():
     if file.filename == '':
         return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
     
-    temp_path = os.path.join('informativos', file.filename)
+    temp_dir = 'informativos'
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    temp_path = os.path.join(temp_dir, file.filename)
     file.save(temp_path)
     with open(temp_path, 'rb') as f:
-        supabase.storage.from_('informativos').upload(file.filename, f, file_options={"content-type": file.mimetype})
+        supabase.storage.from_('informativos').upload(file.filename, f)
     os.remove(temp_path)
     file_url = supabase.storage.from_('informativos').get_public_url(file.filename)
     
@@ -403,14 +400,9 @@ def upload_informativo():
 
 @app.route('/listar_informativos')
 def listar_informativos():
-    response = supabase.table('informativos').select('filename').execute()
-    arquivos = [item['filename'] for item in response.data]
+    response = supabase.table('informativos').select('filename, url').execute()
+    arquivos = [{"filename": item['filename'], "url": item['url']} for item in response.data]
     return jsonify({"arquivos": arquivos})
-
-@app.route('/informativos/<filename>')
-def download_informativo(filename):
-    url = supabase.storage.from_('informativos').get_public_url(filename)
-    return jsonify({"url": url})
 
 @app.route('/upload_avaliacao_fisica', methods=['POST'])
 def upload_avaliacao_fisica():
@@ -422,10 +414,13 @@ def upload_avaliacao_fisica():
         return jsonify({"status": "error", "message": "Nenhum arquivo selecionado"}), 400
     
     filename = f"Etapa-{etapa}-{file.filename}"
-    temp_path = os.path.join('avaliacoes_fisicas', filename)
+    temp_dir = 'avaliacoes_fisicas'
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    temp_path = os.path.join(temp_dir, filename)
     file.save(temp_path)
     with open(temp_path, 'rb') as f:
-        supabase.storage.from_('avaliacoes-fisicas').upload(filename, f, file_options={"content-type": file.mimetype})
+        supabase.storage.from_('avaliacoes-fisicas').upload(filename, f)
     os.remove(temp_path)
     file_url = supabase.storage.from_('avaliacoes-fisicas').get_public_url(filename)
     
@@ -436,130 +431,83 @@ def upload_avaliacao_fisica():
 
 @app.route('/listar_avaliacoes_fisicas')
 def listar_avaliacoes_fisicas():
-    response = supabase.table('avaliacoes_fisicas').select('filename').execute()
-    arquivos = sorted([item['filename'] for item in response.data], key=lambda x: int(x.split('-')[1]) if x.startswith('Etapa-') else float('inf'))
+    response = supabase.table('avaliacoes_fisicas').select('filename, url').execute()
+    arquivos = sorted(
+        [{"filename": item['filename'], "url": item['url']} for item in response.data],
+        key=lambda x: int(x['filename'].split('-')[1]) if x['filename'].startswith('Etapa-') else float('inf')
+    )
     return jsonify({"arquivos": arquivos})
 
-@app.route('/avaliacoes_fisicas/<filename>')
-def download_avaliacao_fisica(filename):
-    url = supabase.storage.from_('avaliacoes-fisicas').get_public_url(filename)
-    return jsonify({"url": url})
-
-@app.route('/editar_questao', methods=['POST'])
-def editar_questao():
-    data = request.form
-    questao_id = data.get('id')
-    cpf = request.args.get('cpf')
-
-    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
-    if not usuario_response.data:
-        return jsonify({"status": "error", "message": "Permissão negada"}), 403
-
-    etapa = data.get('etapa')
-    disciplina = data.get('disciplina')
-    nome_avaliacao = data.get('nome_avaliacao')
-    pergunta = data.get('pergunta')
-    pergunta_complementar = data.get('pergunta_complementar', '')
-    opcao_a = data.get('opcao_a')
-    opcao_b = data.get('opcao_b')
-    opcao_c = data.get('opcao_c')
-    opcao_d = data.get('opcao_d')
-    resposta_correta = data.get('resposta_correta')
-    imagem = request.files.get('imagem')
-    imagem_path = None
-
-    existing_questao = supabase.table('questoes').select('imagem').eq('id', questao_id).execute().data[0]
-    imagem_path = existing_questao['imagem']
-
-    if imagem:
-        temp_path = os.path.join('uploads', imagem.filename)
-        imagem.save(temp_path)
-        with open(temp_path, 'rb') as f:
-            supabase.storage.from_('uploads').upload(imagem.filename, f, file_options={"content-type": imagem.mimetype})
-        os.remove(temp_path)
-        imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
-
-    updated_questao = {
-        "etapa": etapa,
-        "disciplina": disciplina,
-        "nome_avaliacao": nome_avaliacao,
-        "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
-        "pergunta": pergunta,
-        "pergunta_complementar": pergunta_complementar,
-        "opcao_a": opcao_a,
-        "opcao_b": opcao_b,
-        "opcao_c": opcao_c,
-        "opcao_d": opcao_d,
-        "resposta_correta": resposta_correta,
-        "imagem": imagem_path
-    }
-
-    response = supabase.table('questoes').update(updated_questao).eq('id', questao_id).execute()
-    return jsonify({"status": "success", "message": "Questão editada com sucesso"})
-
-@app.route('/excluir_questao', methods=['POST'])
-def excluir_questao():
+# Novas rotas para lista de presença e ATA
+@app.route('/lista_presenca', methods=['POST'])
+def lista_presenca():
     data = request.get_json()
-    questao_id = data.get('id')
-    cpf = request.args.get('cpf')
+    senha = data.get('senha')  # Senha é o identificador da turma
+    response = supabase.table('alunos').select('nome, matricula, unidade, etapa, turma').eq('turma', senha).execute()
+    if response.data:
+        # Verificar se já existe uma lista pra essa turma hoje
+        today = datetime.now().strftime('%Y-%m-%d')
+        existing = supabase.table('presencas').select('id').eq('turma', senha).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        if not existing.data:
+            presencas = [{"turma": senha, "matricula": aluno['matricula'], "presenca": "A", "data": "now()", "estado_prova": "pendente"} for aluno in response.data]
+            supabase.table('presencas').insert(presencas).execute()
+        return jsonify({"status": "success", "alunos": response.data})
+    return jsonify({"status": "error", "message": "Turma não encontrada"})
 
-    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
-    if not usuario_response.data:
-        return jsonify({"status": "error", "message": "Permissão negada"}), 403
-
-    response = supabase.table('questoes').delete().eq('id', questao_id).execute()
-    return jsonify({"status": "success", "message": "Questão excluída com sucesso"})
-
-@app.route('/alterar_disponibilidade_avaliacao', methods=['POST'])
-def alterar_disponibilidade_avaliacao():
+@app.route('/salvar_presenca', methods=['POST'])
+def salvar_presenca():
     data = request.get_json()
-    logger.debug(f"Recebido pedido para alterar disponibilidade: {data}")
-    nome_avaliacao = data.get('nome_avaliacao')
-    etapa = data.get('etapa')
-    disponivel = data.get('disponivel')
-    cpf = request.args.get('cpf')
+    turma = data.get('turma')
+    presencas = data.get('presencas', [])  # Lista de {matricula, presenca}
+    estado = data.get('estado')  # "iniciada" ou "finalizada"
+    
+    today = datetime.now().strftime('%Y-%m-%d')
+    for presenca in presencas:
+        supabase.table('presencas').update({"presenca": presenca['presenca'], "estado_prova": estado}).eq('turma', turma).eq('matricula', presenca['matricula']).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+    if estado == "finalizada" and not presencas:  # Finalizar sem alterar presenças
+        supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+    
+    return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
 
-    if not all([nome_avaliacao, etapa, disponivel is not None, cpf]):
-        logger.error("Parâmetros obrigatórios ausentes")
-        return jsonify({"status": "error", "message": "Parâmetros obrigatórios ausentes"}), 400
-
-    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
-    if not usuario_response.data:
-        logger.error(f"CPF {cpf} não autorizado")
-        return jsonify({"status": "error", "message": "Permissão negada"}), 403
-
-    try:
-        response = supabase.table('questoes').update({'disponivel': disponivel}).eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
-        logger.debug(f"Atualização de disponibilidade concluída: {response}")
-        return jsonify({"status": "success", "message": f"Avaliação {'disponibilizada' if disponivel else 'indisponibilizada'} com sucesso"})
-    except Exception as e:
-        logger.error(f"Erro ao atualizar disponibilidade: {str(e)}")
-        return jsonify({"status": "error", "message": "Erro ao atualizar disponibilidade"}), 500
-
-@app.route('/excluir_avaliacao', methods=['POST'])
-def excluir_avaliacao():
+@app.route('/salvar_ocorrencia', methods=['POST'])
+def salvar_ocorrencia():
     data = request.get_json()
-    logger.debug(f"Recebido pedido para excluir avaliação: {data}")
-    nome_avaliacao = data.get('nome_avaliacao')
-    etapa = data.get('etapa')
-    cpf = request.args.get('cpf')
+    turma = data.get('turma')
+    unidade = data.get('unidade')
+    texto = data.get('texto', "Sem ocorrência")
+    
+    # Gerar PDF
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    c.drawString(100, 750, f"ATA de Ocorrências - Turma: {turma}")
+    c.drawString(100, 730, f"Unidade: {unidade}")
+    c.drawString(100, 710, f"Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    c.drawString(100, 690, "Ocorrência:")
+    texto_lines = texto.split('\n')
+    y = 670
+    for line in texto_lines:
+        c.drawString(100, y, line)
+        y -= 20
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    
+    # Fazer upload pro Supabase Storage
+    pdf_filename = f"ocorrencia_{turma}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    supabase.storage.from_('ocorrencias').upload(pdf_filename, buffer.read())
+    pdf_url = supabase.storage.from_('ocorrencias').get_public_url(pdf_filename)
+    
+    # Salvar metadados
+    ocorrencia = {"turma": turma, "unidade": unidade, "data": "now()", "texto": texto, "pdf_url": pdf_url}
+    supabase.table('ocorrencias').insert(ocorrencia).execute()
+    
+    return jsonify({"status": "success", "message": "Ocorrência salva com sucesso"})
 
-    if not all([nome_avaliacao, etapa, cpf]):
-        logger.error("Parâmetros obrigatórios ausentes")
-        return jsonify({"status": "error", "message": "Parâmetros obrigatórios ausentes"}), 400
-
-    usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
-    if not usuario_response.data:
-        logger.error(f"CPF {cpf} não autorizado")
-        return jsonify({"status": "error", "message": "Permissão negada"}), 403
-
-    try:
-        response = supabase.table('questoes').delete().eq('nome_avaliacao', nome_avaliacao).eq('etapa', etapa).execute()
-        logger.debug(f"Exclusão de avaliação concluída: {response}")
-        return jsonify({"status": "success", "message": "Avaliação excluída com sucesso"})
-    except Exception as e:
-        logger.error(f"Erro ao excluir avaliação: {str(e)}")
-        return jsonify({"status": "error", "message": "Erro ao excluir avaliação"}), 500
+@app.route('/listar_ocorrencias')
+def listar_ocorrencias():
+    unidade = request.args.get('unidade')
+    response = supabase.table('ocorrencias').select('turma, data, pdf_url').eq('unidade', unidade).execute()
+    return jsonify({"ocorrencias": response.data})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

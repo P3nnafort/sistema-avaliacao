@@ -131,6 +131,7 @@
         <p id="mensagemErro" class="erro">A matrícula deve ter exatamente 13 números!</p>
         <p id="matriculaInvalida" class="erro">Matrícula não encontrada!</p>
         <button onclick="iniciarProva()">Iniciar Prova</button>
+        <button onclick="window.location.href='/lista_presenca.html'">Lista de Presença</button>
         <br><button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
@@ -175,6 +176,7 @@
                 } else {
                     mensagemErro.style.display = "none";
                     matriculaInvalida.style.display = "block";
+                    matriculaInvalida.innerHTML = data.message; // Mostra "Esperar o aplicador" ou "Aguarde finalizar"
                 }
             } catch (error) {
                 console.error("Erro detalhado:", error);
@@ -186,7 +188,6 @@
             const etapa = alunoAtual.etapa;
             const response = await fetch(`/carregar_questoes?etapa=${etapa}`);
             const todasQuestoes = await response.json();
-
             const portugues = todasQuestoes.filter(q => q.disciplina === "Língua Portuguesa");
             const matematica = todasQuestoes.filter(q => q.disciplina === "Matemática");
             questoes = [...portugues, ...matematica];
@@ -199,7 +200,7 @@
             }
             const questao = questoes[indice];
             const provaDiv = document.getElementById("prova");
-            let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;">` : "";
+            let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;" onerror="this.src='https://via.placeholder.com/300x200?text=Imagem+Não+Carregada';">` : "";
             let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
             provaDiv.innerHTML = `
                 <h2>Questão ${indice + 1} (${questao.disciplina} - Etapa ${questao.etapa})</h2>
@@ -275,6 +276,8 @@
                 alert("Erro ao conectar ao servidor.");
             }
         }
+
+        window.onload = function() {};
     </script>
 </body>
 </html>

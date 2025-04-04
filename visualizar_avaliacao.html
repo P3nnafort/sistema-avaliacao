@@ -66,60 +66,33 @@
             text-align: left; 
             width: 100%; 
         }
-        .avaliacao-item { 
-            display: flex; 
-            align-items: center; 
+        .avaliacao-lista button { 
+            display: inline-block; /* Permite crescer com o texto */
+            width: auto; /* Remove largura fixa */
+            min-width: 150px; /* Tamanho mínimo pra não ficar muito pequeno */
             margin: 5px 0; 
-            padding: 10px; 
+            padding: 10px 15px; /* Padding ajustado pra mais espaço interno */
             background-color: #f0f0f0; 
             border: 1px solid #ccc; 
-        }
-        .avaliacao-item button { 
-            margin: 0 5px; 
-            padding: 5px; 
-            width: 30px; 
-            height: 30px; 
-            font-size: 16px; 
             cursor: pointer; 
+            text-align: center; /* Centraliza o texto */
+            white-space: nowrap; /* Impede quebra de linha */
+            overflow: hidden; /* Esconde excesso, mas não será necessário com width: auto */
+            text-overflow: ellipsis; /* Adiciona "..." se ainda transbordar */
         }
-        .avaliacao-item button:hover { 
+        .avaliacao-lista button:hover { 
             background-color: #e0e0e0; 
         }
         #prova { 
             display: none; 
             text-align: left; 
+            width: 100%; 
         }
         button { 
             margin: 10px; 
             padding: 5px; 
             width: 100%; 
             max-width: 150px; 
-        }
-        .questao { 
-            margin: 20px 0; 
-        }
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background-color: rgba(0,0,0,0.5); 
-            justify-content: center; 
-            align-items: center; 
-        }
-        .modal-content { 
-            background-color: white; 
-            padding: 20px; 
-            border-radius: 5px; 
-            width: 80%; 
-            max-width: 500px; 
-        }
-        .modal-content input, .modal-content textarea, .modal-content select { 
-            width: 100%; 
-            margin: 5px 0; 
-            padding: 5px; 
         }
     </style>
 </head>
@@ -143,112 +116,35 @@
         <button onclick="window.location.href='/index.html'">Voltar ao Início</button>
     </div>
 
-    <!-- Modal para Edição de Questão -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <h2>Editar Questão</h2>
-            <input type="hidden" id="editId">
-            <label>Nome da Avaliação:</label>
-            <input type="text" id="editNomeAvaliacao"><br>
-            <label>Etapa:</label>
-            <input type="text" id="editEtapa"><br>
-            <label>Disciplina:</label>
-            <select id="editDisciplina">
-                <option value="Língua Portuguesa">Língua Portuguesa</option>
-                <option value="Matemática">Matemática</option>
-            </select><br>
-            <label>Pergunta:</label>
-            <textarea id="editPergunta"></textarea><br>
-            <label>Pergunta Complementar:</label>
-            <textarea id="editPerguntaComplementar"></textarea><br>
-            <label>Opção A:</label>
-            <input type="text" id="editOpcaoA"><br>
-            <label>Opção B:</label>
-            <input type="text" id="editOpcaoB"><br>
-            <label>Opção C:</label>
-            <input type="text" id="editOpcaoC"><br>
-            <label>Opção D:</label>
-            <input type="text" id="editOpcaoD"><br>
-            <label>Resposta Correta:</label>
-            <select id="editRespostaCorreta">
-                <option value="a">A</option>
-                <option value="b">B</option>
-                <option value="c">C</option>
-                <option value="d">D</option>
-            </select><br>
-            <label>Imagem (opcional):</label>
-            <input type="file" id="editImagem" accept="image/*"><br>
-            <button onclick="salvarEdicao()">Salvar</button>
-            <button onclick="fecharModal()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- Modal para Edição de Avaliação -->
-    <div id="editAvaliacaoModal" class="modal">
-        <div class="modal-content">
-            <h2>Editar Avaliação</h2>
-            <input type="hidden" id="editAvaliacaoNome">
-            <input type="hidden" id="editAvaliacaoEtapa">
-            <label>Novo Nome da Avaliação:</label>
-            <input type="text" id="editAvaliacaoNovoNome"><br>
-            <button onclick="salvarEdicaoAvaliacao()">Salvar</button>
-            <button onclick="fecharModalAvaliacao()">Cancelar</button>
-        </div>
-    </div>
-
     <script>
         let questoes = [];
         let questaoAtual = 0;
-        let isCasaAvaliacao = false;
-
-        async function verificarPermissao() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const cpf = urlParams.get("cpf");
-            if (cpf) {
-                const response = await fetch("/verificar_cpf_casa", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ cpf: cpf })
-                });
-                const data = await response.json();
-                isCasaAvaliacao = (data.status === "success");
-            }
-        }
 
         async function carregarListaAvaliacoes() {
-            await verificarPermissao();
             try {
                 const response = await fetch("/listar_avaliacoes");
                 const data = await response.json();
 
                 const listaDiv = document.getElementById("avaliacaoLista");
-                let html = "<h2>Selecione uma Avaliação</h2>";
-                data.avaliacoes.forEach(avaliacao => {
-                    const [nome_avaliacao, etapa] = avaliacao.nome.split(" - ");
-                    const disponivel = avaliacao.disponivel;
-                    html += `
-                        <div class="avaliacao-item">
-                            <button style="flex-grow: 1; width: auto;" onclick="carregarAvaliacao('${nome_avaliacao}', '${etapa}')">${avaliacao.nome}</button>
-                            ${isCasaAvaliacao ? `
-                                <button title="Tornar ${disponivel ? 'Indisponível' : 'Disponível'}" onclick="alterarDisponibilidade('${nome_avaliacao}', '${etapa}', ${!disponivel})">${disponivel ? '&#128683;' : '✅'}</button>
-                                <button title="Excluir Avaliação" onclick="excluirAvaliacao('${nome_avaliacao}', '${etapa}')">🗑️</button>
-                                <button title="Editar Avaliação" onclick="abrirModalEdicaoAvaliacao('${nome_avaliacao}', '${etapa}')">✏️</button>
-                            ` : ''}
-                        </div>
-                    `;
-                });
-                listaDiv.innerHTML = html;
+                if (data.avaliacoes.length === 0) {
+                    listaDiv.innerHTML = "<p>Nenhuma avaliação disponível.</p>";
+                } else {
+                    let html = "<h2>Selecione uma Avaliação</h2>";
+                    data.avaliacoes.forEach(avaliacao => {
+                        const [nome_avaliacao, etapa] = avaliacao.split(" - ");
+                        html += `<button onclick="carregarAvaliacao('${nome_avaliacao}', '${etapa}')">${avaliacao}</button>`;
+                    });
+                    listaDiv.innerHTML = html;
+                }
             } catch (error) {
-                console.error("Erro ao carregar lista de avaliações:", error);
+                console.error("Erro:", error);
                 alert("Erro ao carregar a lista de avaliações.");
             }
         }
 
         async function carregarAvaliacao(nome_avaliacao, etapa) {
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const cpf = urlParams.get("cpf");
-                const response = await fetch(`/carregar_avaliacao_completa?etapa=${etapa}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}${cpf ? '&cpf=' + cpf : ''}`);
+                const response = await fetch(`/carregar_avaliacao_completa?etapa=${etapa}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`);
                 questoes = await response.json();
 
                 if (questoes.length === 0) {
@@ -260,7 +156,7 @@
                     mostrarQuestao(questaoAtual);
                 }
             } catch (error) {
-                console.error("Erro ao carregar avaliação:", error);
+                console.error("Erro:", error);
                 alert("Erro ao carregar a avaliação.");
             }
         }
@@ -270,10 +166,6 @@
             const provaDiv = document.getElementById("prova");
             let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;" onerror="this.src='https://via.placeholder.com/300x200?text=Imagem+Não+Carregada';">` : "";
             let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
-            let editDeleteButtons = isCasaAvaliacao ? `
-                <button onclick="abrirModalEdicao(${indice})">Editar</button>
-                <button onclick="excluirQuestao(${questao.id})">Excluir</button>
-            ` : "";
             provaDiv.innerHTML = `
                 <h2>Questão ${indice + 1} de ${questoes.length} (${questao.disciplina} - Etapa ${questao.etapa})</h2>
                 <p>${questao.pergunta}</p>
@@ -284,7 +176,6 @@
                 <p>C) ${questao.opcao_c}</p>
                 <p>D) ${questao.opcao_d}</p>
                 <p><strong>Resposta correta:</strong> ${questao.resposta_correta.toUpperCase()}</p>
-                ${editDeleteButtons}
                 <button onclick="anteriorQuestao()" ${indice === 0 ? 'disabled' : ''}>Anterior</button>
                 <button onclick="proximaQuestao()" ${indice === questoes.length - 1 ? 'disabled' : ''}>Próxima</button>
             `;
@@ -302,196 +193,6 @@
                 questaoAtual--;
                 mostrarQuestao(questaoAtual);
             }
-        }
-
-        function abrirModalEdicao(indice) {
-            const questao = questoes[indice];
-            document.getElementById("editId").value = questao.id;
-            document.getElementById("editNomeAvaliacao").value = questao.nome_avaliacao;
-            document.getElementById("editEtapa").value = questao.etapa;
-            document.getElementById("editDisciplina").value = questao.disciplina;
-            document.getElementById("editPergunta").value = questao.pergunta;
-            document.getElementById("editPerguntaComplementar").value = questao.pergunta_complementar || '';
-            document.getElementById("editOpcaoA").value = questao.opcao_a;
-            document.getElementById("editOpcaoB").value = questao.opcao_b;
-            document.getElementById("editOpcaoC").value = questao.opcao_c;
-            document.getElementById("editOpcaoD").value = questao.opcao_d;
-            document.getElementById("editRespostaCorreta").value = questao.resposta_correta;
-            document.getElementById("editModal").style.display = "flex";
-        }
-
-        async function salvarEdicao() {
-            const formData = new FormData();
-            formData.append("id", document.getElementById("editId").value);
-            formData.append("nome_avaliacao", document.getElementById("editNomeAvaliacao").value);
-            formData.append("etapa", document.getElementById("editEtapa").value);
-            formData.append("disciplina", document.getElementById("editDisciplina").value);
-            formData.append("pergunta", document.getElementById("editPergunta").value);
-            formData.append("pergunta_complementar", document.getElementById("editPerguntaComplementar").value);
-            formData.append("opcao_a", document.getElementById("editOpcaoA").value);
-            formData.append("opcao_b", document.getElementById("editOpcaoB").value);
-            formData.append("opcao_c", document.getElementById("editOpcaoC").value);
-            formData.append("opcao_d", document.getElementById("editOpcaoD").value);
-            formData.append("resposta_correta", document.getElementById("editRespostaCorreta").value);
-            const imagem = document.getElementById("editImagem").files[0];
-            if (imagem) {
-                formData.append("imagem", imagem);
-            }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const cpf = urlParams.get("cpf");
-
-            try {
-                const response = await fetch(`/editar_questao?cpf=${cpf}`, {
-                    method: "POST",
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.status === "success") {
-                    alert("Questão editada com sucesso!");
-                    fecharModal();
-                    carregarAvaliacao(questoes[questaoAtual].nome_avaliacao, questoes[questaoAtual].etapa);
-                } else {
-                    alert(data.message || "Erro ao editar questão.");
-                }
-            } catch (error) {
-                console.error("Erro ao salvar edição:", error);
-                alert("Erro ao conectar ao servidor.");
-            }
-        }
-
-        async function excluirQuestao(id) {
-            if (!confirm("Tem certeza que deseja excluir esta questão?")) return;
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const cpf = urlParams.get("cpf");
-
-            try {
-                const response = await fetch(`/excluir_questao?cpf=${cpf}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ id: id })
-                });
-                const data = await response.json();
-
-                if (data.status === "success") {
-                    alert("Questão excluída com sucesso!");
-                    carregarAvaliacao(questoes[questaoAtual].nome_avaliacao, questoes[questaoAtual].etapa);
-                } else {
-                    alert(data.message || "Erro ao excluir questão.");
-                }
-            } catch (error) {
-                console.error("Erro ao excluir questão:", error);
-                alert("Erro ao conectar ao servidor.");
-            }
-        }
-
-        async function alterarDisponibilidade(nome_avaliacao, etapa, disponivel) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const cpf = urlParams.get("cpf");
-
-            try {
-                const response = await fetch(`/alterar_disponibilidade_avaliacao?cpf=${cpf}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ nome_avaliacao, etapa, disponivel })
-                });
-                console.log("Resposta do servidor:", response);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Erro na resposta:", errorText);
-                    throw new Error(`Erro ${response.status}: ${errorText}`);
-                }
-                const data = await response.json();
-                console.log("Dados recebidos:", data);
-
-                if (data.status === "success") {
-                    alert(data.message);
-                    carregarListaAvaliacoes();
-                } else {
-                    alert(data.message || "Erro ao alterar disponibilidade.");
-                }
-            } catch (error) {
-                console.error("Erro ao alterar disponibilidade:", error);
-                alert("Erro ao conectar ao servidor: " + error.message);
-            }
-        }
-
-        async function excluirAvaliacao(nome_avaliacao, etapa) {
-            if (!confirm("Tem certeza que deseja excluir esta avaliação? Todas as questões associadas serão removidas.")) return;
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const cpf = urlParams.get("cpf");
-
-            try {
-                const response = await fetch(`/excluir_avaliacao?cpf=${cpf}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ nome_avaliacao, etapa })
-                });
-                console.log("Resposta do servidor:", response);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Erro na resposta:", errorText);
-                    throw new Error(`Erro ${response.status}: ${errorText}`);
-                }
-                const data = await response.json();
-                console.log("Dados recebidos:", data);
-
-                if (data.status === "success") {
-                    alert("Avaliação excluída com sucesso!");
-                    carregarListaAvaliacoes();
-                } else {
-                    alert(data.message || "Erro ao excluir avaliação.");
-                }
-            } catch (error) {
-                console.error("Erro ao excluir avaliação:", error);
-                alert("Erro ao conectar ao servidor: " + error.message);
-            }
-        }
-
-        function abrirModalEdicaoAvaliacao(nome_avaliacao, etapa) {
-            document.getElementById("editAvaliacaoNome").value = nome_avaliacao;
-            document.getElementById("editAvaliacaoEtapa").value = etapa;
-            document.getElementById("editAvaliacaoNovoNome").value = nome_avaliacao;
-            document.getElementById("editAvaliacaoModal").style.display = "flex";
-        }
-
-        async function salvarEdicaoAvaliacao() {
-            const nome_avaliacao = document.getElementById("editAvaliacaoNome").value;
-            const etapa = document.getElementById("editAvaliacaoEtapa").value;
-            const novo_nome = document.getElementById("editAvaliacaoNovoNome").value;
-            const urlParams = new URLSearchParams(window.location.search);
-            const cpf = urlParams.get("cpf");
-
-            try {
-                const response = await fetch(`/editar_avaliacao?cpf=${cpf}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ nome_avaliacao, etapa, novo_nome })
-                });
-                const data = await response.json();
-
-                if (data.status === "success") {
-                    alert("Nome da avaliação editado com sucesso!");
-                    fecharModalAvaliacao();
-                    carregarListaAvaliacoes();
-                } else {
-                    alert(data.message || "Erro ao editar nome da avaliação.");
-                }
-            } catch (error) {
-                console.error("Erro ao salvar edição da avaliação:", error);
-                alert("Erro ao conectar ao servidor.");
-            }
-        }
-
-        function fecharModal() {
-            document.getElementById("editModal").style.display = "none";
-        }
-
-        function fecharModalAvaliacao() {
-            document.getElementById("editAvaliacaoModal").style.display = "none";
         }
 
         carregarListaAvaliacoes();

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Presença</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        input, button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 300px; 
+        }
+        .erro { 
+            color: red; 
+            display: none; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+        }
+        th, td { 
+            border: 1px solid #ccc; 
+            padding: 8px; 
+            text-align: center; 
+        }
+        th { 
+            background-color: #f0f0f0; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Lista de Presença</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content" id="login">
+        <label>Digite a senha da turma:</label><br>
+        <input type="text" id="senha" placeholder="Ex.: TurmaA1"><br>
+        <p id="mensagemErro" class="erro">Senha inválida!</p>
+        <button onclick="carregarLista()">Acessar Lista</button>
+        <br><button onclick="window.location.href='/realizar_prova.html'">Voltar</button>
+    </div>
+
+    <div class="content" id="lista" style="display: none;">
+        <table id="tabelaPresenca">
+            <thead id="tabelaCabecalho"></thead>
+            <tbody id="tabelaCorpo"></tbody>
+        </table>
+        <button onclick="iniciarProva()">Iniciar Prova</button>
+        <button id="finalizarBtn" onclick="finalizarProva()" style="display: none;">Finalizar Prova</button>
+    </div>
+
+    <script>
+        let turmaAtual = null;
+        let alunos = [];
+
+        async function carregarLista() {
+            const senha = document.getElementById("senha").value;
+            if (!senha) {
+                document.getElementById("mensagemErro").style.display = "block";
+                return;
+            }
+
+            try {
+                const response = await fetch("/lista_presenca", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ senha: senha })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    turmaAtual = senha;
+                    alunos = data.alunos;
+                    document.getElementById("login").style.display = "none";
+                    document.getElementById("lista").style.display = "block";
+                    exibirTabela();
+                } else {
+                    document.getElementById("mensagemErro").style.display = "block";
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        function exibirTabela() {
+            const cabecalho = document.getElementById("tabelaCabecalho");
+            const corpo = document.getElementById("tabelaCorpo");
+            if (alunos.length > 0) {
+                const unidade = alunos[0].unidade;
+                const etapa = alunos[0].etapa;
+                const turma = alunos[0].turma;
+                cabecalho.innerHTML = `
+                    <tr>
+                        <th>Unidade: ${unidade}</th>
+                        <th>Etapa: ${etapa}</th>
+                        <th>Turma: ${turma}</th>
+                    </tr>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Matrícula</th>
+                        <th>Presença</th>
+                    </tr>
+                `;
+                let html = "";
+                alunos.forEach(aluno => {
+                    html += `
+                        <tr>
+                            <td>${aluno.nome}</td>
+                            <td>${aluno.matricula}</td>
+                            <td>
+                                <input type="radio" name="presenca_${aluno.matricula}" value="P" checked> P
+                                <input type="radio" name="presenca_${aluno.matricula}" value="A"> A
+                            </td>
+                        </tr>
+                    `;
+                });
+                corpo.innerHTML = html;
+            }
+        }
+
+        async function iniciarProva() {
+            const presencas = alunos.map(aluno => ({
+                matricula: aluno.matricula,
+                presenca: document.querySelector(`input[name="presenca_${aluno.matricula}"]:checked`).value
+            }));
+
+            try {
+                const response = await fetch("/salvar_presenca", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ turma: turmaAtual, presencas: presencas, estado: "iniciada" })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Prova iniciada com sucesso!");
+                    document.getElementById("finalizarBtn").style.display = "inline";
+                } else {
+                    alert("Erro ao iniciar prova!");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        async function finalizarProva() {
+            try {
+                const response = await fetch("/salvar_presenca", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ turma: turmaAtual, presencas: [], estado: "finalizada" })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    window.location.href = `/ata_ocorrencias.html?turma=${turmaAtual}&unidade=${alunos[0].unidade}`;
+                } else {
+                    alert("Erro ao finalizar prova!");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+    </script>
+</body>
+</html>
