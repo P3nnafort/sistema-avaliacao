@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>ATA de Ocorrências</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        textarea, button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        textarea { 
+            height: 200px; 
+            resize: vertical; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>ATA de Ocorrências</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <h2 id="tituloTurma"></h2>
+        <textarea id="ocorrencia" placeholder="Digite aqui as ocorrências da prova (opcional)"></textarea>
+        <button onclick="salvarOcorrencia()">Salvar Ocorrência</button>
+        <button onclick="semOcorrencia()">Sem Ocorrência</button>
+        <br><button onclick="window.location.href='/realizar_prova.html'">Voltar</button>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const turma = urlParams.get("turma");
+        const unidade = urlParams.get("unidade");
+
+        document.getElementById("tituloTurma").innerHTML = `Turma: ${turma} - Unidade: ${unidade}`;
+
+        async function salvarOcorrencia() {
+            const texto = document.getElementById("ocorrencia").value;
+            try {
+                const response = await fetch("/salvar_ocorrencia", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ turma: turma, unidade: unidade, texto: texto })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Ocorrência salva com sucesso!");
+                    window.location.href = "/realizar_prova.html";
+                } else {
+                    alert("Erro ao salvar ocorrência!");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        async function semOcorrencia() {
+            try {
+                const response = await fetch("/salvar_ocorrencia", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ turma: turma, unidade: unidade })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Prova finalizada sem ocorrências!");
+                    window.location.href = "/realizar_prova.html";
+                } else {
+                    alert("Erro ao finalizar sem ocorrência!");
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+    </script>
+</body>
+</html>
