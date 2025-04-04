@@ -35,6 +35,7 @@
         .logo1 { 
             position: fixed; 
             top: 50%; 
+ TRUSTED BY OVER 2M+ STUDENTS WORLDWIDE
             transform: translateY(-50%); 
             left: 20px; 
         }
@@ -101,9 +102,9 @@
     </div>
 
     <div class="content" id="login">
-        <label>Digite a senha da turma:</label><br>
-        <input type="text" id="senha" placeholder="Ex.: TurmaA1"><br>
-        <p id="mensagemErro" class="erro">Senha inválida!</p>
+        <label>Digite a senha da turma (TURMA_UNIDADEID):</label><br>
+        <input type="text" id="senha" placeholder="Ex.: 600_1"><br>
+        <p id="mensagemErro" class="erro">Senha inválida! Use o formato TURMA_UNIDADEID (ex.: 600_1)</p>
         <button onclick="carregarLista()">Acessar Lista</button>
         <br><button onclick="window.location.href='/realizar_prova.html'">Voltar</button>
     </div>
@@ -119,11 +120,12 @@
 
     <script>
         let turmaAtual = null;
+        let unidadeAtual = null;
         let alunos = [];
 
         async function carregarLista() {
             const senha = document.getElementById("senha").value;
-            if (!senha) {
+            if (!senha || !senha.includes('_')) {
                 document.getElementById("mensagemErro").style.display = "block";
                 return;
             }
@@ -137,13 +139,15 @@
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    turmaAtual = senha;
+                    [turmaAtual, unidadeId] = senha.split('_');
+                    unidadeAtual = data.alunos[0].unidade; // Pegar a unidade dos alunos retornados
                     alunos = data.alunos;
                     document.getElementById("login").style.display = "none";
                     document.getElementById("lista").style.display = "block";
                     exibirTabela();
                 } else {
                     document.getElementById("mensagemErro").style.display = "block";
+                    document.getElementById("mensagemErro").innerHTML = data.message;
                 }
             } catch (error) {
                 console.error("Erro:", error);
@@ -197,7 +201,7 @@
                 const response = await fetch("/salvar_presenca", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ turma: turmaAtual, presencas: presencas, estado: "iniciada" })
+                    body: JSON.stringify({ turma: turmaAtual, unidade: unidadeAtual, presencas: presencas, estado: "iniciada" })
                 });
                 const data = await response.json();
 
@@ -218,12 +222,12 @@
                 const response = await fetch("/salvar_presenca", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ turma: turmaAtual, presencas: [], estado: "finalizada" })
+                    body: JSON.stringify({ turma: turmaAtual, unidade: unidadeAtual, presencas: [], estado: "finalizada" })
                 });
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    window.location.href = `/ata_ocorrencias.html?turma=${turmaAtual}&unidade=${alunos[0].unidade}`;
+                    window.location.href = `/ata_ocorrencias.html?turma=${turmaAtual}&unidade=${encodeURIComponent(unidadeAtual)}`;
                 } else {
                     alert("Erro ao finalizar prova!");
                 }

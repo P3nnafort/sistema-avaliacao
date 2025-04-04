@@ -100,7 +100,7 @@ def verificar_matricula():
     response = supabase.table('alunos').select('*').eq('matricula', matricula).execute()
     if response.data:
         aluno = response.data[0]
-        turma_response = supabase.table('presencas').select('estado_prova').eq('turma', aluno['turma']).order('data', desc=True).limit(1).execute()
+        turma_response = supabase.table('presencas').select('estado_prova').eq('turma', aluno['turma']).eq('unidade', aluno['unidade']).order('data', desc=True).limit(1).execute()
         if turma_response.data:
             estado = turma_response.data[0]['estado_prova']
             if estado == 'pendente':
@@ -440,29 +440,43 @@ def listar_avaliacoes_fisicas():
 @app.route('/lista_presenca', methods=['POST'])
 def lista_presenca():
     data = request.get_json()
-    senha = data.get('senha')  # Senha é o identificador da turma
-    response = supabase.table('alunos').select('nome, matricula, unidade, etapa, turma').eq('turma', senha).execute()
+    senha = data.get('senha')  # Senha no formato TURMA_UNIDADEID (ex.: "600_1")
+    try:
+        turma, unidade_id = senha.split('_')
+        unidade_id = int(unidade_id)
+    except ValueError:
+        return jsonify({"status": "error", "message": "Senha inválida. Use o formato TURMA_UNIDADEID (ex.: 600_1)"})
+
+    # Verificar se a unidade existe
+    unidade_response = supabase.table('unidades').select('nome').eq('id', unidade_id).execute()
+    if not unidade_response.data:
+        return jsonify({"status": "error", "message": "Unidade não encontrada"})
+
+    unidade_nome = unidade_response.data[0]['nome']
+    # Buscar alunos com a turma e unidade corretas
+    response = supabase.table('alunos').select('nome, matricula, unidade, etapa, turma').eq('turma', turma).eq('unidade', unidade_nome).execute()
     if response.data:
         today = datetime.now().strftime('%Y-%m-%d')
-        existing = supabase.table('presencas').select('id').eq('turma', senha).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        existing = supabase.table('presencas').select('id').eq('turma', turma).eq('unidade', unidade_nome).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
         if not existing.data:
-            presencas = [{"turma": senha, "matricula": aluno['matricula'], "presenca": "A", "data": "now()", "estado_prova": "pendente"} for aluno in response.data]
+            presencas = [{"turma": turma, "matricula": aluno['matricula'], "unidade": unidade_nome, "presenca": "A", "data": "now()", "estado_prova": "pendente"} for aluno in response.data]
             supabase.table('presencas').insert(presencas).execute()
         return jsonify({"status": "success", "alunos": response.data})
-    return jsonify({"status": "error", "message": "Turma não encontrada"})
+    return jsonify({"status": "error", "message": "Turma ou unidade não encontrada"})
 
 @app.route('/salvar_presenca', methods=['POST'])
 def salvar_presenca():
     data = request.get_json()
     turma = data.get('turma')
+    unidade = data.get('unidade')
     presencas = data.get('presencas', [])
     estado = data.get('estado')
     
     today = datetime.now().strftime('%Y-%m-%d')
     for presenca in presencas:
-        supabase.table('presencas').update({"presenca": presenca['presenca'], "estado_prova": estado}).eq('turma', turma).eq('matricula', presenca['matricula']).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        supabase.table('presencas').update({"presenca": presenca['presenca'], "estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).eq('matricula', presenca['matricula']).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
     if estado == "finalizada" and not presencas:
-        supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
     
     return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
 
