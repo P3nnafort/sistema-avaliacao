@@ -172,6 +172,7 @@
                         body: JSON.stringify({ cpf: cpf })
                     });
                     const data = await response.json();
+                    console.log("Resposta de verificar_cpf_unidade:", data); // Adicione este log
                     if (data.status === "success") {
                         unidadeAtual = data.unidade;
                         carregarFiltrosUnidade();
@@ -251,10 +252,12 @@
                 if (etapa) url += `&etapa=${etapa}`;
                 if (turma) url += `&turma=${turma}`;
             }
+            console.log("URL da requisição:", url); // Adicione este log
 
             try {
                 const response = await fetch(url);
                 const data = await response.json();
+                console.log("Dados recebidos:", data); // Adicione este log
                 const corpo = document.getElementById("tabelaCorpo");
                 if (data.ocorrencias.length === 0) {
                     corpo.innerHTML = "<tr><td colspan='4'>Nenhuma ocorrência encontrada.</td></tr>";
@@ -262,13 +265,13 @@
                     let html = "";
                     data.ocorrencias.forEach(ocorrencia => {
                         html += `
-        <tr>
-            <td>${ocorrencia.turma}</td>
-            <td>${ocorrencia.unidade}</td>
-            <td>${new Date(ocorrencia.data).toLocaleString()}</td>
-            <td><a href="/download_ocorrencia?url=${encodeURIComponent(ocorrencia.pdf_url)}" target="_blank">Download</a></td>
-        </tr>
-    `;
+                    <tr>
+                        <td>${ocorrencia.turma}</td>
+                        <td>${ocorrencia.unidade}</td>
+                        <td>${new Date(ocorrencia.data).toLocaleString()}</td>
+                        <td><a href="/download_ocorrencia?url=${encodeURIComponent(ocorrencia.pdf_url)}" target="_blank">Download</a></td>
+                    </tr>
+                `;
                     });
                     corpo.innerHTML = html;
                 }

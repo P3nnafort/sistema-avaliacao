@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
@@ -18,7 +18,20 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.route('/')
 @app.route('/index.html')
 def serve_index():
-    return send_file('index.html')
+    # Caminho para o arquivo index.html
+    file_path = os.path.join(app.root_path, 'index.html')
+    # Ler o conteúdo do arquivo
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    # Modificar o HTML para incluir o script de limpeza do localStorage
+    modified_html = html_content.replace(
+        '<head>',
+        '<head><script>localStorage.removeItem("cpfValidoUnidade");localStorage.removeItem("cpfValido");</script>'
+    )
+    # Criar a resposta com cabeçalhos personalizados
+    resp = Response(modified_html, mimetype='text/html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/realizar_prova.html')
 def serve_realizar_prova():
@@ -564,7 +577,6 @@ def salvar_ocorrencia():
 @app.route('/listar_ocorrencias')
 def listar_ocorrencias():
     unidade = request.args.get('unidade')
-    etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     tipo = request.args.get('tipo')
     
@@ -572,12 +584,11 @@ def listar_ocorrencias():
     
     if tipo == "unidade" and unidade:
         query = query.eq('unidade', unidade)
-    if etapa:
-        query = query.eq('etapa', etapa)
     if turma:
         query = query.eq('turma', turma)
     
     response = query.execute()
+    print("Ocorrências retornadas:", response.data)  # Adicione este log
     return jsonify({"ocorrencias": response.data})
 
 if __name__ == '__main__':

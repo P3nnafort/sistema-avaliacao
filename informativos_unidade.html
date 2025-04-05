@@ -1,90 +1,104 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Informativos - Unidade</title>
     <style>
-        body { 
-            text-align: center; 
-            margin: 0; 
-            padding: 0; 
-            font-family: Arial, sans-serif; 
-            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
-            background-size: cover; 
-            background-position: center; 
-            background-repeat: no-repeat; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        header { 
-            width: 100%; 
-            background-color: #f0f0f0; 
-            padding: 10px 0; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+
+        header {
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        .titulo { 
-            width: 100%; 
-            text-align: center; 
+
+        .titulo {
+            width: 100%;
+            text-align: center;
         }
-        .titulo h1 { 
-            margin: 0; 
-            font-size: 24px; 
+
+        .titulo h1 {
+            margin: 0;
+            font-size: 24px;
         }
-        .logo1 { 
-            position: fixed; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            left: 20px; 
+
+        .logo1 {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 20px;
         }
-        .logo1 img { 
-            height: 100px; 
-            width: auto; 
+
+        .logo1 img {
+            height: 100px;
+            width: auto;
         }
-        .logo2 { 
-            position: fixed; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            right: 20px; 
+
+        .logo2 {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 20px;
         }
-        .logo2 img { 
-            height: 300px; 
-            width: auto; 
+
+        .logo2 img {
+            height: 300px;
+            width: auto;
         }
-        .content { 
-            margin-top: 60px; 
-            margin-left: 150px; 
-            margin-right: 350px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            max-width: 600px; 
+
+        .content {
+            margin-top: 60px;
+            margin-left: 150px;
+            margin-right: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 600px;
         }
-        .arquivo-lista { 
-            margin: 20px 0; 
-            text-align: left; 
+
+        .arquivo-lista {
+            margin: 20px 0;
+            text-align: left;
         }
-        .arquivo-lista a { 
-            display: block; 
-            margin: 5px 0; 
-            padding: 10px; 
-            background-color: #f0f0f0; 
-            text-decoration: none; 
-            color: #000; 
-            border: 1px solid #ccc; 
+
+        .arquivo-lista a {
+            display: block;
+            margin: 5px 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            text-decoration: none;
+            color: #000;
+            border: 1px solid #ccc;
         }
-        .arquivo-lista a:hover { 
-            background-color: #e0e0e0; 
+
+        .arquivo-lista a:hover {
+            background-color: #e0e0e0;
         }
-        button { 
-            margin: 10px; 
-            padding: 5px; 
-            width: 100%; 
-            max-width: 300px; 
+
+        button {
+            margin: 10px;
+            padding: 5px;
+            width: 100%;
+            max-width: 300px;
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="titulo">
@@ -111,7 +125,11 @@
         async function carregarInformativos() {
             try {
                 const response = await fetch("/listar_informativos");
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
                 const data = await response.json();
+                console.log("Dados recebidos:", data); // Debug
 
                 const listaDiv = document.getElementById("arquivoLista");
                 if (data.arquivos.length === 0) {
@@ -119,19 +137,18 @@
                 } else {
                     let html = "<h2>Informativos Disponíveis</h2>";
                     for (const arquivo of data.arquivos) {
-                        const urlResponse = await fetch(`/informativos/${arquivo}`);
-                        const urlData = await urlResponse.json();
-                        html += `<a href="${urlData.url}" target="_blank">${arquivo}</a>`;
+                        html += `<a href="${arquivo.url}" target="_blank">${arquivo.filename}</a>`;
                     }
                     listaDiv.innerHTML = html;
                 }
             } catch (error) {
-                console.error("Erro:", error);
-                alert("Erro ao carregar informativos.");
+                console.error("Erro detalhado:", error);
+                alert("Erro ao carregar informativos: " + error.message);
             }
         }
 
         carregarInformativos();
     </script>
 </body>
+
 </html>

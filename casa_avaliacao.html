@@ -92,6 +92,7 @@
         <input type="text" id="cpf" placeholder="Ex.: 12345678901"><br>
         <p id="mensagemErro" class="erro">CPF inválido ou não encontrado!</p>
         <button onclick="verificarCpf()">Acessar</button>
+        <button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
     <div class="content" id="opcoes" style="display: none;">
@@ -105,18 +106,18 @@
 
     <script>
         let cpfValido = null;
-
+    
         async function verificarCpf() {
             let cpf = document.getElementById("cpf").value;
             let mensagemErro = document.getElementById("mensagemErro");
             mensagemErro.style.display = "none";
-
+    
             if (!/^\d{11}$/.test(cpf)) {
                 mensagemErro.innerHTML = "O CPF deve ter exatamente 11 números!";
                 mensagemErro.style.display = "block";
                 return;
             }
-
+    
             try {
                 const response = await fetch("/verificar_cpf_casa", {
                     method: "POST",
@@ -139,27 +140,27 @@
                 mensagemErro.style.display = "block";
             }
         }
-
+    
         function criarAvaliacoes() {
             window.location.href = `/criar_prova.html?cpf=${cpfValido}`;
         }
-
+    
         function visualizarResultados() {
             window.location.href = `/resultados_casa.html?cpf=${cpfValido}`;
         }
-
+    
         function visualizarAvaliacoes() {
             window.location.href = `/escolha_avaliacao_casa.html?cpf=${cpfValido}`;
         }
-
+    
         function visualizarInformativos() {
             window.location.href = `/informativos_casa.html?cpf=${cpfValido}`;
         }
-
+    
         function visualizarOcorrencias() {
             window.location.href = `/visualizar_ocorrencias.html?tipo=casa&cpf=${cpfValido}`;
         }
-
+    
         function sair() {
             localStorage.removeItem("cpfValido");
             cpfValido = null;
@@ -167,11 +168,18 @@
             document.getElementById("login").style.display = "block";
             document.getElementById("cpf").value = "";
         }
-
+    
         window.onload = function() {
+            // Verifica se veio de index.html ou se o localStorage deve ser ignorado
+            if (document.referrer.includes("index.html") || !localStorage.getItem("cpfValido")) {
+                localStorage.removeItem("cpfValido");
+                document.getElementById("login").style.display = "block";
+                document.getElementById("opcoes").style.display = "none";
+                return;
+            }
+    
             const storedCpf = localStorage.getItem("cpfValido");
             if (storedCpf) {
-                // Verifica se o CPF armazenado ainda é válido
                 fetch("/verificar_cpf_casa", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
