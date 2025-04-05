@@ -567,17 +567,18 @@ def download_ocorrencia():
     # Extrair o nome do arquivo da URL
     filename = pdf_url.split('/')[-1]
     if not filename.endswith('.pdf'):
-        filename += '.pdf'  # Garante que a extensão esteja presente
+        filename += '.pdf'
     
     # Baixar o arquivo do Supabase
     response = supabase.storage.from_('ocorrencias').download(filename)
     
-    # Enviar o arquivo como resposta com cabeçalhos apropriados
-    return send_file(
-        io.BytesIO(response),
+    # Criar resposta com cabeçalhos manuais
+    return Response(
+        response,
         mimetype='application/pdf',
-        as_attachment=True,
-        download_name=filename  # Nome do arquivo que o navegador usará
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
     )
 
 if __name__ == '__main__':
