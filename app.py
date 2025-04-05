@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
@@ -576,6 +576,29 @@ def listar_ocorrencias():
     
     response = query.execute()
     return jsonify({"ocorrencias": response.data})
+
+@app.route('/download_ocorrencia', methods=['GET'])
+def download_ocorrencia():
+    pdf_url = request.args.get('url')
+    if not pdf_url:
+        return jsonify({"status": "error", "message": "URL não fornecida"}), 400
+    
+    # Extrair o nome do arquivo da URL
+    filename = pdf_url.split('/')[-1]
+    if not filename.endswith('.pdf'):
+        filename += '.pdf'
+    
+    # Baixar o arquivo do Supabase
+    response = supabase.storage.from_('ocorrencias').download(filename)
+    
+    # Criar resposta com cabeçalhos manuais
+    return Response(
+        response,
+        mimetype='application/pdf',
+        headers={
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+    )
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
