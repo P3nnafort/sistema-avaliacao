@@ -35,7 +35,6 @@
         .logo1 { 
             position: fixed; 
             top: 50%; 
- TRUSTED BY OVER 2M+ STUDENTS WORLDWIDE
             transform: translateY(-50%); 
             left: 20px; 
         }
@@ -114,7 +113,7 @@
             <thead id="tabelaCabecalho"></thead>
             <tbody id="tabelaCorpo"></tbody>
         </table>
-        <button onclick="iniciarProva()">Iniciar Prova</button>
+        <button id="iniciarBtn" onclick="iniciarProva()">Iniciar Prova</button>
         <button id="finalizarBtn" onclick="finalizarProva()" style="display: none;">Finalizar Prova</button>
     </div>
 
@@ -140,7 +139,7 @@
 
                 if (data.status === "success") {
                     [turmaAtual, unidadeId] = senha.split('_');
-                    unidadeAtual = data.alunos[0].unidade; // Pegar a unidade dos alunos retornados
+                    unidadeAtual = data.alunos[0].unidade;
                     alunos = data.alunos;
                     document.getElementById("login").style.display = "none";
                     document.getElementById("lista").style.display = "block";
@@ -207,13 +206,14 @@
 
                 if (data.status === "success") {
                     alert("Prova iniciada com sucesso!");
+                    document.getElementById("iniciarBtn").style.display = "none";
                     document.getElementById("finalizarBtn").style.display = "inline";
                 } else {
-                    alert("Erro ao iniciar prova!");
+                    alert("Erro ao iniciar prova: " + data.message);
                 }
             } catch (error) {
-                console.error("Erro:", error);
-                alert("Erro ao conectar ao servidor.");
+                console.error("Erro na requisição:", error);
+                alert("Erro ao conectar ao servidor: " + error.message);
             }
         }
 
@@ -225,15 +225,19 @@
                     body: JSON.stringify({ turma: turmaAtual, unidade: unidadeAtual, presencas: [], estado: "finalizada" })
                 });
                 const data = await response.json();
+                console.log("Resposta do servidor ao finalizar:", data);  // Debug
 
                 if (data.status === "success") {
-                    window.location.href = `/ata_ocorrencias.html?turma=${turmaAtual}&unidade=${encodeURIComponent(unidadeAtual)}`;
+                    alert("Prova finalizada com sucesso!");
+                    const redirectUrl = `/ata_ocorrencias.html?turma=${turmaAtual}&unidade=${encodeURIComponent(unidadeAtual)}`;
+                    console.log("Redirecionando para:", redirectUrl);  // Debug
+                    window.location.href = redirectUrl;
                 } else {
-                    alert("Erro ao finalizar prova!");
+                    alert("Erro ao finalizar prova: " + data.message);
                 }
             } catch (error) {
-                console.error("Erro:", error);
-                alert("Erro ao conectar ao servidor.");
+                console.error("Erro na requisição:", error);
+                alert("Erro ao conectar ao servidor: " + error.message);
             }
         }
     </script>
