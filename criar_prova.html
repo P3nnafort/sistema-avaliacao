@@ -67,6 +67,7 @@
             width: 100%; 
             max-width: 400px; 
         }
+ WATCH NOW
         textarea { 
             height: 100px; 
             resize: vertical; 
@@ -91,7 +92,7 @@
         <img src="/static/logo2.png" alt="Logo 2">
     </div>
 
-    <div class="content" id="formulario">
+    <div class="content" id="formulario" style="display: none;">
         <form id="formQuestao" enctype="multipart/form-data">
             <select id="etapa" name="etapa">
                 <option value="6º Ano">6º Ano</option>
@@ -134,7 +135,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             cpfValido = urlParams.get("cpf");
             if (!cpfValido) {
-                alert("CPF não fornecido. Redirecionando para login.");
+                alert("Acesso não autorizado. Por favor, faça login.");
                 window.location.href = '/casa_avaliacao.html';
                 return;
             }
@@ -154,13 +155,15 @@
                         option.text = disciplina.trim();
                         disciplinaSelect.appendChild(option);
                     });
+                    document.getElementById("formulario").style.display = "block";
                 } else {
-                    alert("Erro ao carregar disciplinas: " + data.message);
+                    alert("CPF inválido ou sem permissão. Redirecionando para login.");
                     window.location.href = '/casa_avaliacao.html';
                 }
             } catch (error) {
                 console.error("Erro:", error);
-                alert("Erro ao conectar ao servidor.");
+                alert("Erro ao conectar ao servidor. Redirecionando para login.");
+                window.location.href = '/casa_avaliacao.html';
             }
         }
 
