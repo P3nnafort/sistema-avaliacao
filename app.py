@@ -558,6 +558,24 @@ def listar_ocorrencias():
     response = query.execute()
     return jsonify({"ocorrencias": response.data})
 
+@app.route('/download_ocorrencia', methods=['GET'])
+def download_ocorrencia():
+    pdf_url = request.args.get('url')
+    if not pdf_url:
+        return jsonify({"status": "error", "message": "URL não fornecida"}), 400
+    
+    # Baixar o arquivo do Supabase
+    filename = pdf_url.split('/')[-1]
+    response = supabase.storage.from_('ocorrencias').download(filename)
+    
+    # Enviar o arquivo como resposta com cabeçalhos apropriados
+    return send_file(
+        io.BytesIO(response),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
+    )
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)

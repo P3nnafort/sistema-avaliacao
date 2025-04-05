@@ -1,94 +1,112 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <title>Visualizar Ocorrências</title>
     <style>
-        body { 
-            text-align: center; 
-            margin: 0; 
-            padding: 0; 
-            font-family: Arial, sans-serif; 
-            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
-            background-size: cover; 
-            background-position: center; 
-            background-repeat: no-repeat; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        header { 
-            width: 100%; 
-            background-color: #f0f0f0; 
-            padding: 10px 0; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+
+        header {
+            width: 100%;
+            background-color: #f0f0f0;
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        .titulo { 
-            width: 100%; 
-            text-align: center; 
+
+        .titulo {
+            width: 100%;
+            text-align: center;
         }
-        .titulo h1 { 
-            margin: 0; 
-            font-size: 24px; 
+
+        .titulo h1 {
+            margin: 0;
+            font-size: 24px;
         }
-        .logo1 { 
-            position: fixed; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            left: 20px; 
+
+        .logo1 {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 20px;
         }
-        .logo1 img { 
-            height: 100px; 
-            width: auto; 
+
+        .logo1 img {
+            height: 100px;
+            width: auto;
         }
-        .logo2 { 
-            position: fixed; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            right: 20px; 
+
+        .logo2 {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 20px;
         }
-        .logo2 img { 
-            height: 300px; 
-            width: auto; 
+
+        .logo2 img {
+            height: 300px;
+            width: auto;
         }
-        .content { 
-            margin-top: 60px; 
-            margin-left: 150px; 
-            margin-right: 350px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            max-width: 600px; 
+
+        .content {
+            margin-top: 60px;
+            margin-left: 150px;
+            margin-right: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 600px;
         }
-        select, button { 
-            margin: 10px; 
-            padding: 5px; 
-            width: 100%; 
-            max-width: 300px; 
+
+        select,
+        button {
+            margin: 10px;
+            padding: 5px;
+            width: 100%;
+            max-width: 300px;
         }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 20px 0; 
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
         }
-        th, td { 
-            border: 1px solid #ccc; 
-            padding: 8px; 
-            text-align: center; 
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
         }
-        th { 
-            background-color: #f0f0f0; 
+
+        th {
+            background-color: #f0f0f0;
         }
-        a { 
-            color: #007bff; 
-            text-decoration: none; 
+
+        a {
+            color: #007bff;
+            text-decoration: none;
         }
-        a:hover { 
-            text-decoration: underline; 
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
+
 <body>
     <header>
         <div class="titulo">
@@ -244,13 +262,13 @@
                     let html = "";
                     data.ocorrencias.forEach(ocorrencia => {
                         html += `
-                            <tr>
-                                <td>${ocorrencia.turma}</td>
-                                <td>${ocorrencia.unidade}</td>
-                                <td>${new Date(ocorrencia.data).toLocaleString()}</td>
-                                <td><a href="${ocorrencia.pdf_url}" target="_blank">Download</a></td>
-                            </tr>
-                        `;
+        <tr>
+            <td>${ocorrencia.turma}</td>
+            <td>${ocorrencia.unidade}</td>
+            <td>${new Date(ocorrencia.data).toLocaleString()}</td>
+            <td><a href="/download_ocorrencia?url=${encodeURIComponent(ocorrencia.pdf_url)}" target="_blank">Download</a></td>
+        </tr>
+    `;
                     });
                     corpo.innerHTML = html;
                 }
@@ -271,4 +289,5 @@
         window.onload = inicializarFiltros;
     </script>
 </body>
+
 </html>
