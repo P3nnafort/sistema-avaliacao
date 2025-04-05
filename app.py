@@ -685,6 +685,28 @@ def listar_ocorrencias():
     response = query.execute()
     return jsonify({"ocorrencias": response.data})
 
+@app.route('/visualizar_avaliacao_restrita.html')
+def serve_visualizar_avaliacao_restrita():
+    return send_file('visualizar_avaliacao_restrita.html')
+
+@app.route('/listar_avaliacoes_restritas')
+def listar_avaliacoes_restritas():
+    cpf = request.args.get('cpf')
+    if not cpf:
+        return jsonify({"status": "error", "message": "CPF não fornecido"}), 400
+    
+    # Verificar as etapas permitidas do usuário
+    response = supabase.table('coordenadores').select('etapas').eq('cpf', cpf).execute()
+    if not response.data:
+        return jsonify({"status": "error", "message": "CPF não encontrado ou sem permissão"}), 404
+    
+    etapas_permitidas = response.data[0]['etapas'].split(',')
+    
+    # Listar avaliações apenas para as etapas permitidas
+    response = supabase.table('questoes').select('nome_avaliacao, etapa').in_('etapa', etapas_permitidas).execute()
+    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
+    return jsonify({"avaliacoes": avaliacoes})
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)

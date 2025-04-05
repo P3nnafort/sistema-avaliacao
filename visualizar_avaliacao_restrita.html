@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualizar Avaliação</title>
+    <style>
+        body { 
+            text-align: center; 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif; 
+            background-image: url('https://img.freepik.com/vetores-premium/de-volta-a-escola-fundo-de-estilo-doodle-educacao-objetos-e-simbolos-desenhados-a-mao-bandeira_43029-1963.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        header { 
+            width: 100%; 
+            background-color: #f0f0f0; 
+            padding: 10px 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+        }
+        .titulo { 
+            width: 100%; 
+            text-align: center; 
+        }
+        .titulo h1 { 
+            margin: 0; 
+            font-size: 24px; 
+        }
+        .logo1 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            left: 20px; 
+        }
+        .logo1 img { 
+            height: 100px; 
+            width: auto; 
+        }
+        .logo2 { 
+            position: fixed; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            right: 20px; 
+        }
+        .logo2 img { 
+            height: 300px; 
+            width: auto; 
+        }
+        .content { 
+            margin-top: 60px; 
+            margin-left: 150px; 
+            margin-right: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 600px; 
+        }
+        .avaliacao-lista { 
+            margin: 20px 0; 
+            text-align: left; 
+            width: 100%; 
+        }
+        .avaliacao-lista button { 
+            display: inline-block; 
+            width: auto; 
+            min-width: 150px; 
+            margin: 5px 0; 
+            padding: 10px 15px; 
+            background-color: #f0f0f0; 
+            border: 1px solid #ccc; 
+            cursor: pointer; 
+            text-align: center; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        .avaliacao-lista button:hover { 
+            background-color: #e0e0e0; 
+        }
+        #prova { 
+            display: none; 
+            text-align: left; 
+            width: 100%; 
+        }
+        button { 
+            margin: 10px; 
+            padding: 5px; 
+            width: 100%; 
+            max-width: 150px; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="titulo">
+            <h1>Visualizar Avaliação</h1>
+        </div>
+    </header>
+
+    <div class="logo1">
+        <img src="/static/logo1.png" alt="Logo 1">
+    </div>
+    <div class="logo2">
+        <img src="/static/logo2.png" alt="Logo 2">
+    </div>
+
+    <div class="content">
+        <div class="avaliacao-lista" id="avaliacaoLista"></div>
+        <div id="prova"></div>
+        <button onclick="window.location.href='/escolha_avaliacao_casa.html?cpf=' + urlParams.get('cpf')">Voltar</button>
+    </div>
+
+    <script>
+        let questoes = [];
+        let questaoAtual = 0;
+        const urlParams = new URLSearchParams(window.location.search);
+        const cpf = urlParams.get("cpf");
+
+        async function carregarListaAvaliacoes() {
+            if (!cpf) {
+                document.getElementById("avaliacaoLista").innerHTML = "<p>CPF não fornecido. Volte à página anterior.</p>";
+                return;
+            }
+
+            try {
+                const response = await fetch(`/listar_avaliacoes_restritas?cpf=${cpf}`);
+                const data = await response.json();
+
+                const listaDiv = document.getElementById("avaliacaoLista");
+                if (data.avaliacoes.length === 0) {
+                    listaDiv.innerHTML = "<p>Nenhuma avaliação disponível para suas etapas.</p>";
+                } else {
+                    let html = "<h2>Selecione uma Avaliação</h2>";
+                    data.avaliacoes.forEach(avaliacao => {
+                        const [nome_avaliacao, etapa] = avaliacao.split(" - ");
+                        html += `<button onclick="carregarAvaliacao('${nome_avaliacao}', '${etapa}')">${avaliacao}</button>`;
+                    });
+                    listaDiv.innerHTML = html;
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar a lista de avaliações.");
+            }
+        }
+
+        async function carregarAvaliacao(nome_avaliacao, etapa) {
+            try {
+                const response = await fetch(`/carregar_avaliacao_completa?etapa=${etapa}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`);
+                questoes = await response.json();
+
+                if (questoes.length === 0) {
+                    document.getElementById("prova").innerHTML = "<p>Nenhuma questão cadastrada para esta avaliação e etapa.</p>";
+                } else {
+                    document.getElementById("avaliacaoLista").style.display = "none";
+                    document.getElementById("prova").style.display = "block";
+                    questaoAtual = 0;
+                    mostrarQuestao(questaoAtual);
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar a avaliação.");
+            }
+        }
+
+        function mostrarQuestao(indice) {
+            const questao = questoes[indice];
+            const provaDiv = document.getElementById("prova");
+            let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;" onerror="this.src='https://via.placeholder.com/300x200?text=Imagem+Não+Carregada';">` : "";
+            let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
+            provaDiv.innerHTML = `
+                <h2>Questão ${indice + 1} de ${questoes.length} (${questao.disciplina} - Etapa ${questao.etapa})</h2>
+                <p>${questao.pergunta}</p>
+                ${imagemHtml}
+                ${complementoHtml}
+                <p>A) ${questao.opcao_a}</p>
+                <p>B) ${questao.opcao_b}</p>
+                <p>C) ${questao.opcao_c}</p>
+                <p>D) ${questao.opcao_d}</p>
+                <p><strong>Resposta correta:</strong> ${questao.resposta_correta.toUpperCase()}</p>
+                <button onclick="anteriorQuestao()" ${indice === 0 ? 'disabled' : ''}>Anterior</button>
+                <button onclick="proximaQuestao()" ${indice === questoes.length - 1 ? 'disabled' : ''}>Próxima</button>
+            `;
+        }
+
+        function proximaQuestao() {
+            if (questaoAtual < questoes.length - 1) {
+                questaoAtual++;
+                mostrarQuestao(questaoAtual);
+            }
+        }
+
+        function anteriorQuestao() {
+            if (questaoAtual > 0) {
+                questaoAtual--;
+                mostrarQuestao(questaoAtual);
+            }
+        }
+
+        // Carregar as avaliações automaticamente ao carregar a página
+        carregarListaAvaliacoes();
+    </script>
+</body>
+</html>
