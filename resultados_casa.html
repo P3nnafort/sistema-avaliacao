@@ -59,6 +59,7 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
+            width: 100%; 
             max-width: 1200px; 
         }
         select, button { 
@@ -67,18 +68,22 @@
             width: 100%; 
             max-width: 300px; 
         }
+        .tabela-container { 
+            width: 100%; 
+            overflow-x: auto; 
+            margin: 20px 0; 
+        }
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin: 20px 0; 
-            table-layout: fixed; 
+            min-width: 1200px; 
         }
         th, td { 
             border: 1px solid #ccc; 
             padding: 8px; 
             text-align: center; 
             font-size: 12px; 
-            word-wrap: break-word; 
+            white-space: nowrap; 
         }
         th { 
             background-color: #f0f0f0; 
@@ -127,10 +132,12 @@
             <p>Média Matemática: <span id="media_matematica">0%</span></p>
         </div>
         
-        <table id="tabelaResultados">
-            <thead id="tabelaCabecalho"></thead>
-            <tbody id="tabelaCorpo"></tbody>
-        </table>
+        <div class="tabela-container">
+            <table id="tabelaResultados">
+                <thead id="tabelaCabecalho"></thead>
+                <tbody id="tabelaCorpo"></tbody>
+            </table>
+        </div>
         <button onclick="voltar()">Voltar</button>
     </div>
 
@@ -239,17 +246,17 @@
                 // Cabeçalho dinâmico
                 let cabecalhoHtml = `
                     <tr>
-                        <th style="width: 100px;">Matrícula</th>
-                        <th style="width: 150px;">Nome</th>
-                        <th style="width: 150px;">Unidade</th>
-                        <th style="width: 80px;">Etapa</th>
-                        <th style="width: 80px;">Turma</th>
-                        <th style="width: 120px;">Avaliação</th>
-                        <th style="width: 80px;">Português (%)</th>
-                        <th style="width: 80px;">Matemática (%)</th>
+                        <th>Matrícula</th>
+                        <th>Nome</th>
+                        <th>Unidade</th>
+                        <th>Etapa</th>
+                        <th>Turma</th>
+                        <th>Avaliação</th>
+                        <th>Português (%)</th>
+                        <th>Matemática (%)</th>
                 `;
                 questoes.forEach((q, i) => {
-                    cabecalhoHtml += `<th style="width: 60px;">Q${i + 1} (${q.habilidade})</th>`;
+                    cabecalhoHtml += `<th>Q${i + 1} (${q.habilidade})</th>`;
                 });
                 cabecalhoHtml += `</tr>`;
                 cabecalho.innerHTML = cabecalhoHtml;
@@ -287,7 +294,7 @@
                 document.getElementById("media_matematica").innerText = data.media_matematica.toFixed(2) + "%";
             } catch (error) {
                 console.error("Erro:", error);
-                alert("Erro ao carregar resultados.");
+                alert("Erro ao carregar resultados: " + error.message);
             }
         }
 

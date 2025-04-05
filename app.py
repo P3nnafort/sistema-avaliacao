@@ -247,12 +247,12 @@ def resultados_unidade():
     resultados = resultados_query.execute().data
     
     # Buscar questões relacionadas aos resultados
-    questoes_query = supabase.table('questoes').select('identificador, habilidade, etapa, nome_avaliacao')
+    questoes_query = supabase.table('questoes').select('id, habilidade, etapa, nome_avaliacao')
     if etapa:
         questoes_query = questoes_query.eq('etapa', etapa)
     if nome_avaliacao:
         questoes_query = questoes_query.eq('nome_avaliacao', nome_avaliacao)
-    questoes = questoes_query.execute().data
+    questoes = questoes_query.order('id').execute().data  # Ordem fixa por ID
     
     # Buscar alunos da unidade pra calcular ausentes
     alunos_query = supabase.table('alunos').select('matricula').eq('unidade', unidade)
@@ -339,12 +339,12 @@ def resultados_casa():
     resultados = resultados_query.execute().data
     
     # Buscar questões relacionadas aos resultados
-    questoes_query = supabase.table('questoes').select('identificador, habilidade, etapa, nome_avaliacao').in_('etapa', etapas_permitidas)
+    questoes_query = supabase.table('questoes').select('id, habilidade, etapa, nome_avaliacao').in_('etapa', etapas_permitidas)
     if nome_avaliacao:
         questoes_query = questoes_query.eq('nome_avaliacao', nome_avaliacao)
     if etapa:
         questoes_query = questoes_query.eq('etapa', etapa)
-    questoes = questoes_query.execute().data
+    questoes = questoes_query.order('id').execute().data  # Ordem fixa por ID
     
     # Buscar alunos pra calcular ausentes
     alunos_query = supabase.table('alunos').select('matricula').in_('etapa', etapas_permitidas)
@@ -684,28 +684,6 @@ def listar_ocorrencias():
     
     response = query.execute()
     return jsonify({"ocorrencias": response.data})
-
-@app.route('/visualizar_avaliacao_restrita.html')
-def serve_visualizar_avaliacao_restrita():
-    return send_file('visualizar_avaliacao_restrita.html')
-
-@app.route('/listar_avaliacoes_restritas')
-def listar_avaliacoes_restritas():
-    cpf = request.args.get('cpf')
-    if not cpf:
-        return jsonify({"status": "error", "message": "CPF não fornecido"}), 400
-    
-    # Verificar as etapas permitidas do usuário
-    response = supabase.table('coordenadores').select('etapas').eq('cpf', cpf).execute()
-    if not response.data:
-        return jsonify({"status": "error", "message": "CPF não encontrado ou sem permissão"}), 404
-    
-    etapas_permitidas = response.data[0]['etapas'].split(',')
-    
-    # Listar avaliações apenas para as etapas permitidas
-    response = supabase.table('questoes').select('nome_avaliacao, etapa').in_('etapa', etapas_permitidas).execute()
-    avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
-    return jsonify({"avaliacoes": avaliacoes})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
