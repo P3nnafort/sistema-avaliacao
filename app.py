@@ -97,6 +97,7 @@ def serve_visualizar_ocorrencias():
 def verificar_matricula():
     data = request.get_json()
     matricula = data.get('matricula')
+    print(f"Verificando matrícula: {matricula}")  # Debug
     response = supabase.table('alunos').select('*').eq('matricula', matricula).execute()
     if response.data:
         aluno = response.data[0]
@@ -129,47 +130,61 @@ def carregar_questoes():
 
 @app.route('/salvar_questao', methods=['POST'])
 def salvar_questao():
-    etapa = request.form['etapa']
-    disciplina = request.form['disciplina']
-    nome_avaliacao = request.form['nome_avaliacao']
-    pergunta = request.form['pergunta']
-    pergunta_complementar = request.form.get('pergunta_complementar', '')
-    opcao_a = request.form['opcao_a']
-    opcao_b = request.form['opcao_b']
-    opcao_c = request.form['opcao_c']
-    opcao_d = request.form['opcao_d']
-    resposta_correta = request.form['resposta_correta']
-    imagem = request.files.get('imagem')
-    imagem_path = None
-    
-    if imagem:
-        temp_dir = 'uploads'
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
-        temp_path = os.path.join(temp_dir, imagem.filename)
-        imagem.save(temp_path)
-        with open(temp_path, 'rb') as f:
-            supabase.storage.from_('uploads').upload(imagem.filename, f)
-        os.remove(temp_path)
-        imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
-    
-    questao = {
-        "etapa": etapa,
-        "disciplina": disciplina,
-        "nome_avaliacao": nome_avaliacao,
-        "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
-        "pergunta": pergunta,
-        "pergunta_complementar": pergunta_complementar,
-        "opcao_a": opcao_a,
-        "opcao_b": opcao_b,
-        "opcao_c": opcao_c,
-        "opcao_d": opcao_d,
-        "resposta_correta": resposta_correta,
-        "imagem": imagem_path
-    }
-    
-    response = supabase.table('questoes').insert(questao).execute()
-    return jsonify({"status": "success", "message": "Questão salva com sucesso"})
+    try:
+        etapa = request.form['etapa']
+        disciplina = request.form['disciplina']
+        nome_avaliacao = request.form['nome_avaliacao']
+        pergunta = request.form['pergunta']
+        pergunta_complementar = request.form.get('pergunta_complementar', '')
+        opcao_a = request.form['opcao_a']
+        opcao_b = request.form['opcao_b']
+        opcao_c = request.form['opcao_c']
+        opcao_d = request.form['opcao_d']
+        resposta_correta = request.form['resposta_correta']
+        nivel_dificuldade = request.form['nivel_dificuldade']
+        descritor = request.form['descritor']
+        habilidade = request.form['habilidade']
+        autor = request.form['autor']
+        imagem = request.files.get('imagem')
+        imagem_path = None
+        
+        print(f"Salvando questão - Disciplina: {disciplina}, Nível: {nivel_dificuldade}, Descritor: {descritor}, Habilidade: {habilidade}, Autor: {autor}")  # Debug
+        
+        if imagem:
+            temp_dir = 'uploads'
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
+            temp_path = os.path.join(temp_dir, imagem.filename)
+            imagem.save(temp_path)
+            with open(temp_path, 'rb') as f:
+                supabase.storage.from_('uploads').upload(imagem.filename, f)
+            os.remove(temp_path)
+            imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
+        
+        questao = {
+            "etapa": etapa,
+            "disciplina": disciplina,
+            "nome_avaliacao": nome_avaliacao,
+            "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
+            "pergunta": pergunta,
+            "pergunta_complementar": pergunta_complementar,
+            "opcao_a": opcao_a,
+            "opcao_b": opcao_b,
+            "opcao_c": opcao_c,
+            "opcao_d": opcao_d,
+            "resposta_correta": resposta_correta,
+            "nivel_dificuldade": nivel_dificuldade,
+            "descritor": descritor,
+            "habilidade": habilidade,
+            "autor": autor,
+            "imagem": imagem_path
+        }
+        
+        response = supabase.table('questoes').insert(questao).execute()
+        return jsonify({"status": "success", "message": "Questão salva com sucesso"})
+    except Exception as e:
+        print(f"Erro ao salvar questão: {str(e)}")  # Debug
+        return jsonify({"status": "error", "message": f"Erro ao salvar questão: {str(e)}"}), 500
 
 @app.route('/verificar_cpf_unidade', methods=['POST'])
 def verificar_cpf_unidade():
@@ -440,13 +455,14 @@ def listar_avaliacoes_fisicas():
 @app.route('/lista_presenca', methods=['POST'])
 def lista_presenca():
     data = request.get_json()
-    senha = data.get('senha')
+    senha = data.get('senha')  # Senha no formato TURMA_UNIDADEID (ex.: "600_1")
     print(f"Senha recebida: {senha}")  # Debug
     try:
         turma, unidade_id = senha.split('_')
         unidade_id = int(unidade_id)
         print(f"Turma: {turma}, Unidade ID: {unidade_id}")  # Debug
     except ValueError:
+        print("Erro: Formato de senha inválido")  # Debug
         return jsonify({"status": "error", "message": "Senha inválida. Use o formato TURMA_UNIDADEID (ex.: 600_1)"})
 
     unidade_response = supabase.table('unidades').select('nome').eq('id', unidade_id).execute()
@@ -461,8 +477,10 @@ def lista_presenca():
     if response.data:
         today = datetime.now().strftime('%Y-%m-%d')
         existing = supabase.table('presencas').select('id').eq('turma', turma).eq('unidade', unidade_nome).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
+        print(f"Presenças existentes hoje: {len(existing.data) if existing.data else 0}")  # Debug
         if not existing.data:
             presencas = [{"turma": turma, "matricula": aluno['matricula'], "unidade": unidade_nome, "presenca": "A", "data": "now()", "estado_prova": "pendente"} for aluno in response.data]
+            print(f"Inserindo {len(presencas)} presenças")  # Debug
             supabase.table('presencas').insert(presencas).execute()
         return jsonify({"status": "success", "alunos": response.data})
     return jsonify({"status": "error", "message": "Turma ou unidade não encontrada"})
@@ -514,6 +532,7 @@ def salvar_ocorrencia():
     turma = data.get('turma')
     unidade = data.get('unidade')
     texto = data.get('texto', "Sem ocorrência")
+    print(f"Salvando ocorrência - Turma: {turma}, Unidade: {unidade}")  # Debug
     
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)

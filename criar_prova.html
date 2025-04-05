@@ -61,16 +61,19 @@
             align-items: center; 
             max-width: 600px; 
         }
-        label, input, textarea, select, button { 
+        input[type="text"], input[type="file"], select, textarea, button { 
             margin: 10px; 
+            padding: 5px; 
             width: 100%; 
-            max-width: 300px; 
+            max-width: 400px; 
         }
         textarea { 
             height: 100px; 
+            resize: vertical; 
         }
-        input[type="file"] { 
-            width: auto; 
+        .erro { 
+            color: red; 
+            display: none; 
         }
     </style>
 </head>
@@ -88,68 +91,73 @@
         <img src="/static/logo2.png" alt="Logo 2">
     </div>
 
-    <div class="content">
-        <label>Nome da Avaliação:</label>
-        <input type="text" id="nome_avaliacao" placeholder="Ex.: Avaliação 1"><br>
-        <label>Etapa:</label>
-        <select id="etapa"></select><br>
-        <label>Disciplina:</label>
-        <select id="disciplina">
-            <option value="Língua Portuguesa">Língua Portuguesa</option>
-            <option value="Matemática">Matemática</option>
-        </select><br>
-        <label>Pergunta:</label>
-        <textarea id="pergunta" placeholder="Digite a pergunta"></textarea><br>
-        <label>Imagem (opcional):</label>
-        <input type="file" id="imagem" accept="image/*"><br>
-        <label>Pergunta complementar (opcional):</label>
-        <textarea id="pergunta_complementar" placeholder="Digite a pergunta complementar (opcional)"></textarea><br>
-        <label>Opção A:</label>
-        <input type="text" id="opcao_a" placeholder="Digite a opção A"><br>
-        <label>Opção B:</label>
-        <input type="text" id="opcao_b" placeholder="Digite a opção B"><br>
-        <label>Opção C:</label>
-        <input type="text" id="opcao_c" placeholder="Digite a opção C"><br>
-        <label>Opção D:</label>
-        <input type="text" id="opcao_d" placeholder="Digite a opção D"><br>
-        <label>Resposta correta:</label>
-        <select id="resposta_correta">
-            <option value="a">A</option>
-            <option value="b">B</option>
-            <option value="c">C</option>
-            <option value="d">D</option>
-        </select><br>
-        <button onclick="salvarQuestao()">Salvar Questão</button>
-        <button onclick="finalizarProva()">Finalizar Prova</button>
+    <div class="content" id="login">
+        <label>Digite seu CPF (11 dígitos):</label><br>
+        <input type="text" id="cpf" placeholder="Ex.: 12345678901"><br>
+        <p id="mensagemErro" class="erro">CPF inválido!</p>
+        <button onclick="verificarCpf()">Acessar</button>
+    </div>
+
+    <div class="content" id="formulario" style="display: none;">
+        <form id="formQuestao" enctype="multipart/form-data">
+            <select id="etapa" name="etapa">
+                <option value="6º Ano">6º Ano</option>
+                <option value="7º Ano">7º Ano</option>
+                <option value="8º Ano">8º Ano</option>
+                <option value="9º Ano">9º Ano</option>
+            </select>
+            <select id="disciplina" name="disciplina"></select>
+            <input type="text" id="nome_avaliacao" name="nome_avaliacao" placeholder="Nome da Avaliação">
+            <select id="nivel_dificuldade" name="nivel_dificuldade">
+                <option value="Fácil">Fácil</option>
+                <option value="Médio">Médio</option>
+                <option value="Difícil">Difícil</option>
+            </select>
+            <input type="text" id="descritor" name="descritor" placeholder="Descritor (ex.: D1)">
+            <input type="text" id="habilidade" name="habilidade" placeholder="Habilidade (ex.: H1)">
+            <input type="text" id="autor" name="autor" placeholder="Autor">
+            <textarea id="pergunta" name="pergunta" placeholder="Digite a pergunta"></textarea>
+            <textarea id="pergunta_complementar" name="pergunta_complementar" placeholder="Pergunta complementar (opcional)"></textarea>
+            <input type="text" id="opcao_a" name="opcao_a" placeholder="Opção A">
+            <input type="text" id="opcao_b" name="opcao_b" placeholder="Opção B">
+            <input type="text" id="opcao_c" name="opcao_c" placeholder="Opção C">
+            <input type="text" id="opcao_d" name="opcao_d" placeholder="Opção D">
+            <select id="resposta_correta" name="resposta_correta">
+                <option value="a">A</option>
+                <option value="b">B</option>
+                <option value="c">C</option>
+                <option value="d">D</option>
+            </select>
+            <input type="file" id="imagem" name="imagem" accept="image/*">
+            <button type="button" onclick="salvarQuestao()">Salvar Questão</button>
+        </form>
         <br><button onclick="window.location.href='/casa_avaliacao.html'">Voltar</button>
     </div>
 
     <script>
-        let cpfAtual = localStorage.getItem("cpfValido");
+        let cpfValido = null;
 
-        async function carregarEtapas() {
-            if (!cpfAtual) {
-                alert("CPF não encontrado. Por favor, faça login novamente.");
-                window.location.href = '/casa_avaliacao.html';
+        async function verificarCpf() {
+            let cpf = document.getElementById("cpf").value;
+            if (!/^\d{11}$/.test(cpf)) {
+                document.getElementById("mensagemErro").style.display = "block";
                 return;
             }
-
             try {
-                const response = await fetch("/etapas_permitidas", {
+                const response = await fetch("/verificar_cpf_casa", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ cpf: cpfAtual })
+                    body: JSON.stringify({ cpf: cpf })
                 });
                 const data = await response.json();
-
                 if (data.status === "success") {
-                    const etapaSelect = document.getElementById("etapa");
-                    etapaSelect.innerHTML = '<option value="">Selecione Etapa</option>';
-                    data.etapas.forEach(etapa => {
-                        etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
-                    });
+                    cpfValido = cpf;
+                    localStorage.setItem("cpfValido", cpf);
+                    document.getElementById("login").style.display = "none";
+                    document.getElementById("formulario").style.display = "block";
+                    carregarDisciplinas(data.disciplinas);
                 } else {
-                    alert("Erro ao carregar etapas permitidas.");
+                    document.getElementById("mensagemErro").style.display = "block";
                 }
             } catch (error) {
                 console.error("Erro:", error);
@@ -157,38 +165,20 @@
             }
         }
 
+        function carregarDisciplinas(disciplinas) {
+            const disciplinaSelect = document.getElementById("disciplina");
+            disciplinaSelect.innerHTML = "";
+            disciplinas.split(',').forEach(disciplina => {
+                const option = document.createElement("option");
+                option.value = disciplina.trim();
+                option.text = disciplina.trim();
+                disciplinaSelect.appendChild(option);
+            });
+        }
+
         async function salvarQuestao() {
-            const nome_avaliacao = document.getElementById("nome_avaliacao").value;
-            const etapa = document.getElementById("etapa").value;
-            const disciplina = document.getElementById("disciplina").value;
-            const pergunta = document.getElementById("pergunta").value;
-            const pergunta_complementar = document.getElementById("pergunta_complementar").value;
-            const opcao_a = document.getElementById("opcao_a").value;
-            const opcao_b = document.getElementById("opcao_b").value;
-            const opcao_c = document.getElementById("opcao_c").value;
-            const opcao_d = document.getElementById("opcao_d").value;
-            const resposta_correta = document.getElementById("resposta_correta").value;
-            const imagem = document.getElementById("imagem").files[0];
-
-            if (!nome_avaliacao || !etapa || !pergunta || !opcao_a || !opcao_b || !opcao_c || !opcao_d) {
-                alert("Por favor, preencha todos os campos obrigatórios.");
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("nome_avaliacao", nome_avaliacao);
-            formData.append("etapa", etapa);
-            formData.append("disciplina", disciplina);
-            formData.append("pergunta", pergunta);
-            formData.append("pergunta_complementar", pergunta_complementar);
-            formData.append("opcao_a", opcao_a);
-            formData.append("opcao_b", opcao_b);
-            formData.append("opcao_c", opcao_c);
-            formData.append("opcao_d", opcao_d);
-            formData.append("resposta_correta", resposta_correta);
-            if (imagem) {
-                formData.append("imagem", imagem);
-            }
+            const form = document.getElementById("formQuestao");
+            const formData = new FormData(form);
 
             try {
                 const response = await fetch("/salvar_questao", {
@@ -196,38 +186,27 @@
                     body: formData
                 });
                 const data = await response.json();
-
                 if (data.status === "success") {
                     alert("Questão salva com sucesso!");
-                    // Resetar todos os campos
-                    document.getElementById("nome_avaliacao").value = "";
-                    document.getElementById("etapa").value = "";
-                    document.getElementById("disciplina").value = "Língua Portuguesa";
-                    document.getElementById("pergunta").value = "";
-                    document.getElementById("pergunta_complementar").value = "";
-                    document.getElementById("opcao_a").value = "";
-                    document.getElementById("opcao_b").value = "";
-                    document.getElementById("opcao_c").value = "";
-                    document.getElementById("opcao_d").value = "";
-                    document.getElementById("resposta_correta").value = "a";
-                    document.getElementById("imagem").value = "";
+                    form.reset();
                 } else {
-                    alert("Erro ao salvar questão!");
+                    alert("Erro ao salvar questão: " + data.message);
                 }
             } catch (error) {
                 console.error("Erro:", error);
-                alert("Erro ao conectar ao servidor: " + error.message);
+                alert("Erro ao conectar ao servidor.");
             }
         }
 
-        function finalizarProva() {
-            const nome_avaliacao = document.getElementById("nome_avaliacao").value;
-            const etapa = document.getElementById("etapa").value;
-            const disciplina = document.getElementById("disciplina").value;
-            window.location.href = `/visualizar_prova.html?etapa=${etapa}&disciplina=${encodeURIComponent(disciplina)}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`;
-        }
-
-        window.onload = carregarEtapas;
+        window.onload = function() {
+            const storedCpf = localStorage.getItem("cpfValido");
+            if (storedCpf) {
+                cpfValido = storedCpf;
+                document.getElementById("login").style.display = "none";
+                document.getElementById("formulario").style.display = "block";
+                verificarCpf(); // Recarrega as disciplinas
+            }
+        };
     </script>
 </body>
 </html>

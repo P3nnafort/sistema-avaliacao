@@ -176,7 +176,7 @@
                 } else {
                     mensagemErro.style.display = "none";
                     matriculaInvalida.style.display = "block";
-                    matriculaInvalida.innerHTML = data.message; // Mostra "Esperar o aplicador" ou "Aguarde finalizar"
+                    matriculaInvalida.innerHTML = data.message;
                 }
             } catch (error) {
                 console.error("Erro detalhado:", error);
@@ -202,8 +202,10 @@
             const provaDiv = document.getElementById("prova");
             let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;" onerror="this.src='https://via.placeholder.com/300x200?text=Imagem+Não+Carregada';">` : "";
             let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
+            let metaDadosHtml = `<p>${questao.nivel_dificuldade} (${questao.descritor} - ${questao.habilidade}) (${questao.autor})</p>`;
             provaDiv.innerHTML = `
                 <h2>Questão ${indice + 1} (${questao.disciplina} - Etapa ${questao.etapa})</h2>
+                ${metaDadosHtml}
                 <p>${questao.pergunta}</p>
                 ${imagemHtml}
                 ${complementoHtml}
