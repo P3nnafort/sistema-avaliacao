@@ -268,8 +268,8 @@
                                 <td>${resultado.matematica_porcentagem.toFixed(2)}%</td>
                         `;
                         questoes.forEach((q, i) => {
-                            const resposta = resultado.respostas ? resultado.respostas[`q${i}`] : "-";
-                            html += `<td>${resposta.toUpperCase()}</td>`;
+                            const resposta = resultado.respostas && resultado.respostas[`q${i}`] ? resultado.respostas[`q${i}`].toUpperCase() : "-";
+                            html += `<td>${resposta}</td>`;
                         });
                         html += `</tr>`;
                     });
