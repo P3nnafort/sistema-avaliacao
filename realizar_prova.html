@@ -106,6 +106,10 @@
             text-align: left; 
             flex-grow: 1; 
         }
+        .correta { 
+            color: green; 
+            font-weight: bold; 
+        }
         button { 
             margin-top: 20px; 
         }
@@ -135,7 +139,7 @@
         <br><button onclick="window.location.href='/index.html'">Voltar</button>
     </div>
 
-    <div id="prova" class="content"></div>
+    <div id="prova" class="content" style="display: none;"></div>
 
     <script>
         let matriculaValida = null;
@@ -173,6 +177,11 @@
                     }
                     document.getElementById("login").style.display = "none";
                     mostrarQuestao(0);
+                } else if (data.status === "finalizada") {
+                    matriculaValida = matricula;
+                    alunoAtual = data.aluno;
+                    questoes = data.questoes;
+                    mostrarResultado(data.resultado);
                 } else {
                     mensagemErro.style.display = "none";
                     matriculaInvalida.style.display = "block";
@@ -262,21 +271,64 @@
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    let url = `/resultado.html?matricula=${data.matricula}&nome=${encodeURIComponent(data.nome)}&unidade=${encodeURIComponent(data.unidade)}&etapa=${data.etapa}&turma=${data.turma}`;
-                    url += `&acertos=${data.acertos}&total=${data.total}&porcentagem=${data.porcentagem}`;
-                    url += `&portugues_acertos=${data.portugues_acertos}&portugues_total=${data.portugues_total}&portugues_porcentagem=${data.portugues_porcentagem}`;
-                    url += `&matematica_acertos=${data.matematica_acertos}&matematica_total=${data.matematica_total}&matematica_porcentagem=${data.matematica_porcentagem}`;
-                    Object.keys(respostas).forEach(key => {
-                        url += `&${key}=${respostas[key]}`;
-                    });
-                    window.location.href = url;
+                    alert(data.message);
+                    window.location.href = "/index.html";
                 } else {
-                    alert("Erro ao salvar resultado!");
+                    alert("Erro ao salvar resultado: " + data.message);
                 }
             } catch (error) {
                 console.error("Erro:", error);
                 alert("Erro ao conectar ao servidor.");
             }
+        }
+
+        function mostrarResultado(resultado) {
+            const provaDiv = document.getElementById("prova");
+            let html = `<h2>Resultado da Prova</h2>
+                        <p>Nome: ${alunoAtual.nome}</p>
+                        <p>Matrícula: ${alunoAtual.matricula}</p>
+                        <p>Unidade: ${alunoAtual.unidade}</p>
+                        <p>Etapa: ${alunoAtual.etapa}</p>
+                        <p>Turma: ${alunoAtual.turma}</p>
+                        <p>Acertos: ${resultado.acertos}/${resultado.total} (${resultado.porcentagem.toFixed(2)}%)</p>
+                        <p>Língua Portuguesa: ${resultado.portugues_acertos}/${resultado.portugues_total} (${resultado.portugues_porcentagem.toFixed(2)}%)</p>
+                        <p>Matemática: ${resultado.matematica_acertos}/${resultado.matematica_total} (${resultado.matematica_porcentagem.toFixed(2)}%)</p>`;
+            
+            questoes.forEach((questao, i) => {
+                const respostaAluno = resultado.respostas[`q${i}`];
+                const correta = questao.resposta_correta;
+                const opcoes = {
+                    'a': questao.opcao_a,
+                    'b': questao.opcao_b,
+                    'c': questao.opcao_c,
+                    'd': questao.opcao_d
+                };
+                let imagemHtml = questao.imagem ? `<img src="${questao.imagem}" style="max-width: 300px; margin: 10px;">` : "";
+                let complementoHtml = questao.pergunta_complementar ? `<p>${questao.pergunta_complementar}</p>` : "";
+                html += `
+                    <h3>Questão ${i + 1} (${questao.disciplina})</h3>
+                    <p>${questao.nivel_dificuldade} (${questao.descritor} - ${questao.habilidade}) (${questao.autor})</p>
+                    <p>${questao.pergunta}</p>
+                    ${imagemHtml}
+                    ${complementoHtml}
+                    <div class="opcoes">
+                `;
+                for (let opt in opcoes) {
+                    const classe = opt === correta ? 'correta' : '';
+                    const checked = opt === respostaAluno ? 'checked' : '';
+                    html += `
+                        <div class="opcao">
+                            <input type="radio" name="q${i}" value="${opt}" ${checked} disabled>
+                            <label class="${classe}" for="q${i}${opt}">${opt.toUpperCase()}) ${opcoes[opt]}</label>
+                        </div>
+                    `;
+                }
+                html += `</div>`;
+            });
+            html += `<br><button onclick="window.location.href='/index.html'">Voltar</button>`;
+            provaDiv.innerHTML = html;
+            provaDiv.style.display = "block";
+            document.getElementById("login").style.display = "none";
         }
 
         window.onload = function() {};

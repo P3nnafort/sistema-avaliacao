@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, Response
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
@@ -18,20 +18,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.route('/')
 @app.route('/index.html')
 def serve_index():
-    # Caminho para o arquivo index.html
-    file_path = os.path.join(app.root_path, 'index.html')
-    # Ler o conteúdo do arquivo
-    with open(file_path, 'r', encoding='utf-8') as f:
-        html_content = f.read()
-    # Modificar o HTML para incluir o script de limpeza do localStorage
-    modified_html = html_content.replace(
-        '<head>',
-        '<head><script>localStorage.removeItem("cpfValidoUnidade");localStorage.removeItem("cpfValido");</script>'
-    )
-    # Criar a resposta com cabeçalhos personalizados
-    resp = Response(modified_html, mimetype='text/html')
-    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    return resp
+    return send_file('index.html')
 
 @app.route('/realizar_prova.html')
 def serve_realizar_prova():
@@ -120,9 +107,23 @@ def verificar_matricula():
             if estado == 'pendente':
                 return jsonify({"status": "error", "message": "Esperar o aplicador iniciar a prova"})
             elif estado == 'iniciada':
-                resultado_response = supabase.table('resultados').select('matricula').eq('matricula', matricula).execute()
+                resultado_response = supabase.table('resultados').select('matricula, acertos, total, porcentagem, respostas, portugues_acertos, portugues_total, portugues_porcentagem, matematica_acertos, matematica_total, matematica_porcentagem').eq('matricula', matricula).execute()
                 if resultado_response.data:
+                    # Prova já foi feita, mas ainda está "iniciada"
                     return jsonify({"status": "error", "message": "Aguarde a prova finalizar"})
+                else:
+                    # Prova iniciada, aluno pode continuar
+                    return jsonify({"status": "success", "aluno": aluno})
+            elif estado == 'finalizada' and resultado_response.data:
+                # Prova finalizada, retornar resultado com respostas
+                resultado = resultado_response.data[0]
+                questoes_response = supabase.table('questoes').select('*').eq('etapa', aluno['etapa']).execute()
+                return jsonify({
+                    "status": "finalizada",
+                    "aluno": aluno,
+                    "resultado": resultado,
+                    "questoes": questoes_response.data
+                })
         return jsonify({"status": "success", "aluno": aluno})
     return jsonify({"status": "error", "message": "Matrícula não encontrada"})
 
@@ -215,7 +216,6 @@ def resultados_unidade():
     etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     
-    # Buscar resultados da unidade
     resultados_query = supabase.table('resultados').select('*').eq('unidade', unidade)
     if nome_avaliacao:
         resultados_query = resultados_query.eq('nome_avaliacao', nome_avaliacao)
@@ -225,15 +225,12 @@ def resultados_unidade():
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
-    # Buscar avaliações disponíveis
     avaliacoes_query = supabase.table('resultados').select('nome_avaliacao').eq('unidade', unidade).execute()
     avaliacoes = sorted(set(r.get('nome_avaliacao', 'Sem Avaliação') for r in avaliacoes_query.data if r.get('nome_avaliacao')))
     
-    # Buscar etapas disponíveis
     etapas_query = supabase.table('resultados').select('etapa').eq('unidade', unidade).execute()
     etapas = sorted(set(r['etapa'] for r in etapas_query.data))
     
-    # Buscar turmas disponíveis (filtradas por etapa se selecionada)
     turmas_query = supabase.table('resultados').select('turma').eq('unidade', unidade)
     if etapa:
         turmas_query = turmas_query.eq('etapa', etapa)
@@ -270,7 +267,6 @@ def resultados_casa():
     
     etapas_permitidas = usuario_response.data[0]['etapas'].split(',')
     
-    # Buscar resultados
     resultados_query = supabase.table('resultados').select('*').in_('etapa', etapas_permitidas)
     if nome_avaliacao:
         resultados_query = resultados_query.eq('nome_avaliacao', nome_avaliacao)
@@ -282,19 +278,15 @@ def resultados_casa():
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
-    # Buscar avaliações disponíveis
     avaliacoes_query = supabase.table('resultados').select('nome_avaliacao').in_('etapa', etapas_permitidas).execute()
     avaliacoes = sorted(set(r.get('nome_avaliacao', 'Sem Avaliação') for r in avaliacoes_query.data if r.get('nome_avaliacao')))
     
-    # Buscar unidades disponíveis
     unidades_query = supabase.table('resultados').select('unidade').in_('etapa', etapas_permitidas).execute()
     unidades = sorted(set(r['unidade'] for r in unidades_query.data))
     
-    # Buscar etapas disponíveis
     etapas_query = supabase.table('resultados').select('etapa').in_('etapa', etapas_permitidas).execute()
     etapas = sorted(set(r['etapa'] for r in etapas_query.data))
     
-    # Buscar turmas disponíveis (filtradas por etapa se selecionada)
     turmas_query = supabase.table('resultados').select('turma').in_('etapa', etapas_permitidas)
     if etapa:
         turmas_query = turmas_query.eq('etapa', etapa)
@@ -359,28 +351,13 @@ def salvar_resultado():
         "matematica_acertos": matematica_acertos,
         "matematica_total": matematica_total,
         "matematica_porcentagem": matematica_porcentagem,
-        "nome_avaliacao": questoes[0]['nome_avaliacao'] if questoes else "Sem Avaliação"  # Adiciona nome da avaliação
+        "nome_avaliacao": questoes[0]['nome_avaliacao'] if questoes else "Sem Avaliação"
     }
     
     supabase.table('resultados').insert(resultado).execute()
     
-    return jsonify({
-        "status": "success",
-        "matricula": matricula,
-        "nome": nome,
-        "unidade": unidade,
-        "etapa": etapa,
-        "turma": turma,
-        "acertos": acertos,
-        "total": total,
-        "porcentagem": porcentagem,
-        "portugues_acertos": portugues_acertos,
-        "portugues_total": portugues_total,
-        "portugues_porcentagem": portugues_porcentagem,
-        "matematica_acertos": matematica_acertos,
-        "matematica_total": matematica_total,
-        "matematica_porcentagem": matematica_porcentagem
-    })
+    # Retorna apenas confirmação, sem resultado
+    return jsonify({"status": "success", "message": "Prova finalizada, aguarde todos finalizarem."})
 
 @app.route('/etapas_permitidas', methods=['POST'])
 def etapas_permitidas():
@@ -471,44 +448,44 @@ def listar_avaliacoes_fisicas():
 @app.route('/lista_presenca', methods=['POST'])
 def lista_presenca():
     data = request.get_json()
-    senha = data.get('senha')  # Senha no formato TURMA_UNIDADEID (ex.: "600_1")
-    print(f"Senha recebida: {senha}")  # Debug
+    senha = data.get('senha')
+    print(f"Senha recebida: {senha}")
     try:
         turma, unidade_id = senha.split('_')
         unidade_id = int(unidade_id)
-        print(f"Turma: {turma}, Unidade ID: {unidade_id}")  # Debug
+        print(f"Turma: {turma}, Unidade ID: {unidade_id}")
     except ValueError:
-        print("Erro: Formato de senha inválido")  # Debug
+        print("Erro: Formato de senha inválido")
         return jsonify({"status": "error", "message": "Senha inválida. Use o formato TURMA_UNIDADEID (ex.: 600_1)"})
 
     unidade_response = supabase.table('unidades').select('nome').eq('id', unidade_id).execute()
     if not unidade_response.data:
-        print(f"Unidade ID {unidade_id} não encontrada")  # Debug
+        print(f"Unidade ID {unidade_id} não encontrada")
         return jsonify({"status": "error", "message": "Unidade não encontrada"})
 
     unidade_nome = unidade_response.data[0]['nome']
-    print(f"Unidade encontrada: {unidade_nome}")  # Debug
+    print(f"Unidade encontrada: {unidade_nome}")
     response = supabase.table('alunos').select('nome, matricula, unidade, etapa, turma').eq('turma', turma).eq('unidade', unidade_nome).execute()
-    print(f"Alunos encontrados: {len(response.data) if response.data else 0}")  # Debug
+    print(f"Alunos encontrados: {len(response.data) if response.data else 0}")
     if response.data:
         today = datetime.now().strftime('%Y-%m-%d')
         existing = supabase.table('presencas').select('id').eq('turma', turma).eq('unidade', unidade_nome).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
-        print(f"Presenças existentes hoje: {len(existing.data) if existing.data else 0}")  # Debug
+        print(f"Presenças existentes hoje: {len(existing.data) if existing.data else 0}")
         if not existing.data:
             presencas = [{"turma": turma, "matricula": aluno['matricula'], "unidade": unidade_nome, "presenca": "A", "data": "now()", "estado_prova": "pendente"} for aluno in response.data]
-            print(f"Inserindo {len(presencas)} presenças")  # Debug
+            print(f"Inserindo {len(presencas)} presenças")
             supabase.table('presencas').insert(presencas).execute()
         return jsonify({"status": "success", "alunos": response.data})
     return jsonify({"status": "error", "message": "Turma ou unidade não encontrada"})
 
 @app.route('/salvar_presenca', methods=['POST'])
 def salvar_presenca():
-    print("Rota /salvar_presenca chamada")  # Debug inicial
+    print("Rota /salvar_presenca chamada")
     try:
         data = request.get_json()
-        print(f"Dados recebidos: {data}")  # Debug
+        print(f"Dados recebidos: {data}")
         if not data:
-            print("Erro: Nenhum dado recebido na requisição")  # Debug
+            print("Erro: Nenhum dado recebido na requisição")
             return jsonify({"status": "error", "message": "Nenhum dado enviado"}), 400
         
         turma = data.get('turma')
@@ -517,29 +494,29 @@ def salvar_presenca():
         estado = data.get('estado')
         
         if not turma or not unidade or not estado:
-            print(f"Erro: Dados incompletos - Turma: {turma}, Unidade: {unidade}, Estado: {estado}")  # Debug
+            print(f"Erro: Dados incompletos - Turma: {turma}, Unidade: {unidade}, Estado: {estado}")
             return jsonify({"status": "error", "message": "Dados incompletos (turma, unidade ou estado faltando)"}), 400
 
-        print(f"Salvando presenças - Turma: {turma}, Unidade: {unidade}, Estado: {estado}, Presenças: {len(presencas)}")  # Debug
+        print(f"Salvando presenças - Turma: {turma}, Unidade: {unidade}, Estado: {estado}, Presenças: {len(presencas)}")
         
         today = datetime.now().strftime('%Y-%m-%d')
         for presenca in presencas:
             matricula = presenca.get('matricula')
             presenca_valor = presenca.get('presenca')
             if not matricula or not presenca_valor:
-                print(f"Erro: Presença inválida - Matrícula: {matricula}, Presença: {presenca_valor}")  # Debug
+                print(f"Erro: Presença inválida - Matrícula: {matricula}, Presença: {presenca_valor}")
                 return jsonify({"status": "error", "message": "Dados de presença inválidos"}), 400
-            print(f"Atualizando matrícula: {matricula} com presenca: {presenca_valor}")  # Debug
+            print(f"Atualizando matrícula: {matricula} com presenca: {presenca_valor}")
             supabase.table('presencas').update({"presenca": presenca_valor, "estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).eq('matricula', matricula).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
         
         if estado == "finalizada" and not presencas:
-            print(f"Finalizando prova sem presenças")  # Debug
+            print(f"Finalizando prova sem presenças")
             supabase.table('presencas').update({"estado_prova": estado}).eq('turma', turma).eq('unidade', unidade).gte('data', f"{today} 00:00:00").lte('data', f"{today} 23:59:59").execute()
         
-        print("Presenças salvas com sucesso")  # Debug
+        print("Presenças salvas com sucesso")
         return jsonify({"status": "success", "message": f"Presença salva e prova {estado}"})
     except Exception as e:
-        print(f"Erro interno ao salvar presenças: {str(e)}")  # Debug
+        print(f"Erro interno ao salvar presenças: {str(e)}")
         return jsonify({"status": "error", "message": f"Erro interno: {str(e)}"}), 500
 
 @app.route('/salvar_ocorrencia', methods=['POST'])
@@ -548,7 +525,7 @@ def salvar_ocorrencia():
     turma = data.get('turma')
     unidade = data.get('unidade')
     texto = data.get('texto', "Sem ocorrência")
-    print(f"Salvando ocorrência - Turma: {turma}, Unidade: {unidade}")  # Debug
+    print(f"Salvando ocorrência - Turma: {turma}, Unidade: {unidade}")
     
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
@@ -577,6 +554,7 @@ def salvar_ocorrencia():
 @app.route('/listar_ocorrencias')
 def listar_ocorrencias():
     unidade = request.args.get('unidade')
+    etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     tipo = request.args.get('tipo')
     
@@ -584,13 +562,14 @@ def listar_ocorrencias():
     
     if tipo == "unidade" and unidade:
         query = query.eq('unidade', unidade)
+    if etapa:
+        query = query.eq('etapa', etapa)
     if turma:
         query = query.eq('turma', turma)
     
     response = query.execute()
-    print("Ocorrências retornadas:", response.data)  # Adicione este log
     return jsonify({"ocorrencias": response.data})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=True)
