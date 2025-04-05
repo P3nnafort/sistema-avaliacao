@@ -95,7 +95,7 @@
     </div>
 
     <div class="content" id="opcoes" style="display: none;">
-        <button onclick="window.location.href='/criar_prova.html'">Criar Avaliações</button>
+        <button onclick="criarAvaliacoes()">Criar Avaliações</button>
         <button onclick="visualizarResultados()">Visualizar Resultados</button>
         <button onclick="visualizarAvaliacoes()">Visualizar Avaliações</button>
         <button onclick="visualizarInformativos()">Visualizar Informativos</button>
@@ -131,6 +131,10 @@
                 console.error("Erro:", error);
                 alert("Erro ao conectar ao servidor.");
             }
+        }
+
+        function criarAvaliacoes() {
+            window.location.href = `/criar_prova.html?cpf=${cpfValido}`;
         }
 
         function visualizarResultados() {
