@@ -95,7 +95,7 @@ def serve_visualizar_ocorrencias():
 # Rotas de API
 @app.route('/verificar_matricula', methods=['POST'])
 def verificar_matricula():
-    print("Rota /verificar_matricula chamada")  # Debug
+    print("Rota /verificar_matricula chamada")
     try:
         data = request.get_json()
         if not data or 'matricula' not in data:
@@ -236,6 +236,7 @@ def resultados_unidade():
     etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     
+    # Buscar resultados da unidade
     resultados_query = supabase.table('resultados').select('*').eq('unidade', unidade)
     if nome_avaliacao:
         resultados_query = resultados_query.eq('nome_avaliacao', nome_avaliacao)
@@ -245,12 +246,37 @@ def resultados_unidade():
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
+    # Buscar alunos da unidade pra calcular ausentes
+    alunos_query = supabase.table('alunos').select('matricula').eq('unidade', unidade)
+    if etapa:
+        alunos_query = alunos_query.eq('etapa', etapa)
+    if turma:
+        alunos_query = alunos_query.eq('turma', turma)
+    alunos = alunos_query.execute().data
+    
+    # Calcular participantes e ausentes
+    participantes = len(resultados)
+    total_alunos = len(alunos)
+    ausentes = total_alunos - participantes
+    
+    # Calcular médias por disciplina
+    portugues_total = sum(r['portugues_acertos'] for r in resultados if r['portugues_total'] > 0)
+    portugues_possivel = sum(r['portugues_total'] for r in resultados if r['portugues_total'] > 0)
+    matematica_total = sum(r['matematica_acertos'] for r in resultados if r['matematica_total'] > 0)
+    matematica_possivel = sum(r['matematica_total'] for r in resultados if r['matematica_total'] > 0)
+    
+    media_portugues = (portugues_total / portugues_possivel * 100) if portugues_possivel > 0 else 0
+    media_matematica = (matematica_total / matematica_possivel * 100) if matematica_possivel > 0 else 0
+    
+    # Buscar avaliações disponíveis
     avaliacoes_query = supabase.table('resultados').select('nome_avaliacao').eq('unidade', unidade).execute()
     avaliacoes = sorted(set(r.get('nome_avaliacao', 'Sem Avaliação') for r in avaliacoes_query.data if r.get('nome_avaliacao')))
     
+    # Buscar etapas disponíveis
     etapas_query = supabase.table('resultados').select('etapa').eq('unidade', unidade).execute()
     etapas = sorted(set(r['etapa'] for r in etapas_query.data))
     
+    # Buscar turmas disponíveis (filtradas por etapa se selecionada)
     turmas_query = supabase.table('resultados').select('turma').eq('unidade', unidade)
     if etapa:
         turmas_query = turmas_query.eq('etapa', etapa)
@@ -260,7 +286,11 @@ def resultados_unidade():
         "resultados": resultados,
         "avaliacoes": avaliacoes,
         "etapas": etapas,
-        "turmas": turmas
+        "turmas": turmas,
+        "participantes": participantes,
+        "ausentes": ausentes,
+        "media_portugues": media_portugues,
+        "media_matematica": media_matematica
     })
 
 @app.route('/verificar_cpf_casa', methods=['POST'])
@@ -283,10 +313,11 @@ def resultados_casa():
     
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
-        return jsonify({"resultados": [], "avaliacoes": [], "unidades": [], "etapas": [], "turmas": []})
+        return jsonify({"resultados": [], "avaliacoes": [], "unidades": [], "etapas": [], "turmas": [], "participantes": 0, "ausentes": 0, "media_portugues": 0, "media_matematica": 0})
     
     etapas_permitidas = usuario_response.data[0]['etapas'].split(',')
     
+    # Buscar resultados
     resultados_query = supabase.table('resultados').select('*').in_('etapa', etapas_permitidas)
     if nome_avaliacao:
         resultados_query = resultados_query.eq('nome_avaliacao', nome_avaliacao)
@@ -298,15 +329,43 @@ def resultados_casa():
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
+    # Buscar alunos pra calcular ausentes
+    alunos_query = supabase.table('alunos').select('matricula').in_('etapa', etapas_permitidas)
+    if unidade:
+        alunos_query = alunos_query.eq('unidade', unidade)
+    if etapa:
+        alunos_query = alunos_query.eq('etapa', etapa)
+    if turma:
+        alunos_query = alunos_query.eq('turma', turma)
+    alunos = alunos_query.execute().data
+    
+    # Calcular participantes e ausentes
+    participantes = len(resultados)
+    total_alunos = len(alunos)
+    ausentes = total_alunos - participantes
+    
+    # Calcular médias por disciplina
+    portugues_total = sum(r['portugues_acertos'] for r in resultados if r['portugues_total'] > 0)
+    portugues_possivel = sum(r['portugues_total'] for r in resultados if r['portugues_total'] > 0)
+    matematica_total = sum(r['matematica_acertos'] for r in resultados if r['matematica_total'] > 0)
+    matematica_possivel = sum(r['matematica_total'] for r in resultados if r['matematica_total'] > 0)
+    
+    media_portugues = (portugues_total / portugues_possivel * 100) if portugues_possivel > 0 else 0
+    media_matematica = (matematica_total / matematica_possivel * 100) if matematica_possivel > 0 else 0
+    
+    # Buscar avaliações disponíveis
     avaliacoes_query = supabase.table('resultados').select('nome_avaliacao').in_('etapa', etapas_permitidas).execute()
     avaliacoes = sorted(set(r.get('nome_avaliacao', 'Sem Avaliação') for r in avaliacoes_query.data if r.get('nome_avaliacao')))
     
+    # Buscar unidades disponíveis
     unidades_query = supabase.table('resultados').select('unidade').in_('etapa', etapas_permitidas).execute()
     unidades = sorted(set(r['unidade'] for r in unidades_query.data))
     
+    # Buscar etapas disponíveis
     etapas_query = supabase.table('resultados').select('etapa').in_('etapa', etapas_permitidas).execute()
     etapas = sorted(set(r['etapa'] for r in etapas_query.data))
     
+    # Buscar turmas disponíveis (filtradas por etapa se selecionada)
     turmas_query = supabase.table('resultados').select('turma').in_('etapa', etapas_permitidas)
     if etapa:
         turmas_query = turmas_query.eq('etapa', etapa)
@@ -317,12 +376,16 @@ def resultados_casa():
         "avaliacoes": avaliacoes,
         "unidades": unidades,
         "etapas": etapas,
-        "turmas": turmas
+        "turmas": turmas,
+        "participantes": participantes,
+        "ausentes": ausentes,
+        "media_portugues": media_portugues,
+        "media_matematica": media_matematica
     })
 
 @app.route('/salvar_resultado', methods=['POST'])
 def salvar_resultado():
-    print("Rota /salvar_resultado chamada")  # Debug
+    print("Rota /salvar_resultado chamada")
     try:
         data = request.get_json()
         if not data:
@@ -378,7 +441,7 @@ def salvar_resultado():
             "portugues_acertos": portugues_acertos,
             "portugues_total": portugues_total,
             "portugues_porcentagem": portugues_porcentagem,
-            "matematica_acertos": matematica_accentos,
+            "matematica_acertos": matematica_acertos,
             "matematica_total": matematica_total,
             "matematica_porcentagem": matematica_porcentagem,
             "nome_avaliacao": questoes[0]['nome_avaliacao'] if questoes else "Sem Avaliação"

@@ -59,7 +59,7 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            max-width: 600px; 
+            max-width: 800px; 
         }
         select, button { 
             margin: 10px; 
@@ -76,9 +76,16 @@
             border: 1px solid #ccc; 
             padding: 8px; 
             text-align: center; 
+            font-size: 12px; 
         }
         th { 
             background-color: #f0f0f0; 
+        }
+        #resumo { 
+            margin: 10px 0; 
+            text-align: left; 
+            width: 100%; 
+            max-width: 600px; 
         }
     </style>
 </head>
@@ -110,6 +117,14 @@
             <option value="">Todas as Turmas</option>
         </select>
         <button onclick="carregarResultados()">Filtrar</button>
+        
+        <div id="resumo">
+            <p>Participantes: <span id="participantes">0</span></p>
+            <p>Ausentes: <span id="ausentes">0</span></p>
+            <p>Média Língua Portuguesa: <span id="media_portugues">0%</span></p>
+            <p>Média Matemática: <span id="media_matematica">0%</span></p>
+        </div>
+        
         <table id="tabelaResultados">
             <thead>
                 <tr>
@@ -119,9 +134,9 @@
                     <th>Etapa</th>
                     <th>Turma</th>
                     <th>Avaliação</th>
-                    <th>Acertos</th>
-                    <th>Total</th>
-                    <th>Porcentagem</th>
+                    <th>Português (%)</th>
+                    <th>Matemática (%)</th>
+                    <th>Respostas</th>
                 </tr>
             </thead>
             <tbody id="tabelaCorpo"></tbody>
@@ -130,158 +145,141 @@
     </div>
 
     <script>
-    let cpfValido = null;
+        let cpfValido = null;
 
-    async function inicializar() {
-        const urlParams = new URLSearchParams(window.location.search);
-        cpfValido = urlParams.get("cpf");
-        if (!cpfValido) {
-            alert("Acesso não autorizado. Por favor, faça login.");
-            window.location.href = '/casa_avaliacao.html';
-            return;
-        }
-        try {
-            const response = await fetch("/verificar_cpf_casa", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ cpf: cpfValido })
-            });
-            const data = await response.json();
-            if (data.status === "success") {
-                await carregarFiltros();
-                await carregarResultados();
-            } else {
-                alert("Erro ao carregar dados: " + data.message);
+        async function inicializar() {
+            const urlParams = new URLSearchParams(window.location.search);
+            cpfValido = urlParams.get("cpf");
+            if (!cpfValido) {
+                alert("Acesso não autorizado. Por favor, faça login.");
                 window.location.href = '/casa_avaliacao.html';
+                return;
             }
-        } catch (error) {
-            console.error("Erro:", error);
-            alert("Erro ao conectar ao servidor.");
+            try {
+                const response = await fetch("/verificar_cpf_casa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cpf: cpfValido })
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    await carregarFiltros();
+                    await carregarResultados();
+                } else {
+                    alert("Erro ao carregar dados: " + data.message);
+                    window.location.href = '/casa_avaliacao.html';
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
         }
-    }
 
-    async function carregarFiltros() {
-        try {
-            const response = await fetch(`/resultados_casa?cpf=${cpfValido}`);
-            const data = await response.json();
-            console.log("Dados recebidos do backend:", data);  // Debug
-            
-            const avaliacaoSelect = document.getElementById("avaliacao");
-            avaliacaoSelect.innerHTML = '<option value="">Todas as Avaliações</option>';
-            if (data.avaliacoes && data.avaliacoes.length > 0) {
+        async function carregarFiltros() {
+            try {
+                const response = await fetch(`/resultados_casa?cpf=${cpfValido}`);
+                const data = await response.json();
+                
+                const avaliacaoSelect = document.getElementById("avaliacao");
+                avaliacaoSelect.innerHTML = '<option value="">Todas as Avaliações</option>';
                 data.avaliacoes.forEach(avaliacao => {
                     avaliacaoSelect.innerHTML += `<option value="${avaliacao}">${avaliacao}</option>`;
                 });
-            } else {
-                console.warn("Nenhuma avaliação encontrada");  // Debug
-            }
-            
-            const unidadeSelect = document.getElementById("unidade");
-            unidadeSelect.innerHTML = '<option value="">Todas as Unidades</option>';
-            if (data.unidades && data.unidades.length > 0) {
+                
+                const unidadeSelect = document.getElementById("unidade");
+                unidadeSelect.innerHTML = '<option value="">Todas as Unidades</option>';
                 data.unidades.forEach(unidade => {
                     unidadeSelect.innerHTML += `<option value="${unidade}">${unidade}</option>`;
                 });
-            } else {
-                console.warn("Nenhuma unidade encontrada");  // Debug
-            }
-            
-            const etapaSelect = document.getElementById("etapa");
-            etapaSelect.innerHTML = '<option value="">Todas as Etapas</option>';
-            if (data.etapas && data.etapas.length > 0) {
+                
+                const etapaSelect = document.getElementById("etapa");
+                etapaSelect.innerHTML = '<option value="">Todas as Etapas</option>';
                 data.etapas.forEach(etapa => {
                     etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
                 });
-            } else {
-                console.warn("Nenhuma etapa encontrada");  // Debug
-            }
-            
-            const turmaSelect = document.getElementById("turma");
-            turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
-            if (data.turmas && data.turmas.length > 0) {
+                
+                const turmaSelect = document.getElementById("turma");
+                turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
                 data.turmas.forEach(turma => {
                     turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
                 });
-            } else {
-                console.warn("Nenhuma turma encontrada");  // Debug
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar filtros.");
             }
-        } catch (error) {
-            console.error("Erro ao carregar filtros:", error);
-            alert("Erro ao carregar filtros.");
         }
-    }
 
-    async function carregarTurmas() {
-        const etapa = document.getElementById("etapa").value;
-        try {
-            const response = await fetch(`/resultados_casa?cpf=${cpfValido}${etapa ? '&etapa=' + etapa : ''}`);
-            const data = await response.json();
-            console.log("Turmas recebidas:", data.turmas);  // Debug
-            
-            const turmaSelect = document.getElementById("turma");
-            turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
-            if (data.turmas && data.turmas.length > 0) {
+        async function carregarTurmas() {
+            const etapa = document.getElementById("etapa").value;
+            try {
+                const response = await fetch(`/resultados_casa?cpf=${cpfValido}${etapa ? '&etapa=' + etapa : ''}`);
+                const data = await response.json();
+                
+                const turmaSelect = document.getElementById("turma");
+                turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
                 data.turmas.forEach(turma => {
                     turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
                 });
-            } else {
-                console.warn("Nenhuma turma encontrada para a etapa:", etapa);  // Debug
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar turmas.");
             }
-        } catch (error) {
-            console.error("Erro ao carregar turmas:", error);
-            alert("Erro ao carregar turmas.");
         }
-    }
 
-    async function carregarResultados() {
-        const avaliacao = document.getElementById("avaliacao").value;
-        const unidade = document.getElementById("unidade").value;
-        const etapa = document.getElementById("etapa").value;
-        const turma = document.getElementById("turma").value;
-        
-        let url = `/resultados_casa?cpf=${cpfValido}`;
-        if (avaliacao) url += `&nome_avaliacao=${encodeURIComponent(avaliacao)}`;
-        if (unidade) url += `&unidade=${encodeURIComponent(unidade)}`;
-        if (etapa) url += `&etapa=${encodeURIComponent(etapa)}`;
-        if (turma) url += `&turma=${encodeURIComponent(turma)}`;
+        async function carregarResultados() {
+            const avaliacao = document.getElementById("avaliacao").value;
+            const unidade = document.getElementById("unidade").value;
+            const etapa = document.getElementById("etapa").value;
+            const turma = document.getElementById("turma").value;
+            
+            let url = `/resultados_casa?cpf=${cpfValido}`;
+            if (avaliacao) url += `&nome_avaliacao=${avaliacao}`;
+            if (unidade) url += `&unidade=${unidade}`;
+            if (etapa) url += `&etapa=${etapa}`;
+            if (turma) url += `&turma=${turma}`;
 
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            console.log("Resultados recebidos:", data.resultados);  // Debug
-            const corpo = document.getElementById("tabelaCorpo");
-            if (!data.resultados || data.resultados.length === 0) {
-                corpo.innerHTML = "<tr><td colspan='9'>Nenhum resultado encontrado.</td></tr>";
-            } else {
-                let html = "";
-                data.resultados.forEach(resultado => {
-                    html += `
-                        <tr>
-                            <td>${resultado.matricula || '-'}</td>
-                            <td>${resultado.nome || '-'}</td>
-                            <td>${resultado.unidade || '-'}</td>
-                            <td>${resultado.etapa || '-'}</td>
-                            <td>${resultado.turma || '-'}</td>
-                            <td>${resultado.nome_avaliacao || "Sem Avaliação"}</td>
-                            <td>${resultado.acertos || 0}</td>
-                            <td>${resultado.total || 0}</td>
-                            <td>${resultado.porcentagem ? resultado.porcentagem.toFixed(2) : '0.00'}%</td>
-                        </tr>
-                    `;
-                });
-                corpo.innerHTML = html;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const corpo = document.getElementById("tabelaCorpo");
+                if (data.resultados.length === 0) {
+                    corpo.innerHTML = "<tr><td colspan='9'>Nenhum resultado encontrado.</td></tr>";
+                } else {
+                    let html = "";
+                    data.resultados.forEach(resultado => {
+                        const respostas = resultado.respostas ? Object.values(resultado.respostas).join(', ') : "N/A";
+                        html += `
+                            <tr>
+                                <td>${resultado.matricula}</td>
+                                <td>${resultado.nome}</td>
+                                <td>${resultado.unidade}</td>
+                                <td>${resultado.etapa}</td>
+                                <td>${resultado.turma}</td>
+                                <td>${resultado.nome_avaliacao || "Sem Avaliação"}</td>
+                                <td>${resultado.portugues_porcentagem.toFixed(2)}%</td>
+                                <td>${resultado.matematica_porcentagem.toFixed(2)}%</td>
+                                <td>${respostas}</td>
+                            </tr>
+                        `;
+                    });
+                    corpo.innerHTML = html;
+                }
+                // Atualizar resumo
+                document.getElementById("participantes").innerText = data.participantes;
+                document.getElementById("ausentes").innerText = data.ausentes;
+                document.getElementById("media_portugues").innerText = data.media_portugues.toFixed(2) + "%";
+                document.getElementById("media_matematica").innerText = data.media_matematica.toFixed(2) + "%";
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar resultados.");
             }
-        } catch (error) {
-            console.error("Erro ao carregar resultados:", error);
-            alert("Erro ao carregar resultados.");
         }
-    }
 
-    function voltar() {
-        window.location.href = `/casa_avaliacao.html?cpf=${cpfValido}`;
-    }
+        function voltar() {
+            window.location.href = `/casa_avaliacao.html?cpf=${cpfValido}`;
+        }
 
-    window.onload = inicializar;
-</script>
+        window.onload = inicializar;
+    </script>
 </body>
 </html>

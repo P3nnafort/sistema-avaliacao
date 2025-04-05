@@ -59,7 +59,7 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            max-width: 600px; 
+            max-width: 800px; 
         }
         select, button { 
             margin: 10px; 
@@ -76,9 +76,16 @@
             border: 1px solid #ccc; 
             padding: 8px; 
             text-align: center; 
+            font-size: 12px; 
         }
         th { 
             background-color: #f0f0f0; 
+        }
+        #resumo { 
+            margin: 10px 0; 
+            text-align: left; 
+            width: 100%; 
+            max-width: 600px; 
         }
     </style>
 </head>
@@ -107,6 +114,14 @@
             <option value="">Todas as Turmas</option>
         </select>
         <button onclick="carregarResultados()">Filtrar</button>
+        
+        <div id="resumo">
+            <p>Participantes: <span id="participantes">0</span></p>
+            <p>Ausentes: <span id="ausentes">0</span></p>
+            <p>Média Língua Portuguesa: <span id="media_portugues">0%</span></p>
+            <p>Média Matemática: <span id="media_matematica">0%</span></p>
+        </div>
+        
         <table id="tabelaResultados">
             <thead>
                 <tr>
@@ -115,9 +130,9 @@
                     <th>Etapa</th>
                     <th>Turma</th>
                     <th>Avaliação</th>
-                    <th>Acertos</th>
-                    <th>Total</th>
-                    <th>Porcentagem</th>
+                    <th>Português (%)</th>
+                    <th>Matemática (%)</th>
+                    <th>Respostas</th>
                 </tr>
             </thead>
             <tbody id="tabelaCorpo"></tbody>
@@ -222,6 +237,7 @@
                 } else {
                     let html = "";
                     data.resultados.forEach(resultado => {
+                        const respostas = resultado.respostas ? Object.values(resultado.respostas).join(', ') : "N/A";
                         html += `
                             <tr>
                                 <td>${resultado.matricula}</td>
@@ -229,14 +245,19 @@
                                 <td>${resultado.etapa}</td>
                                 <td>${resultado.turma}</td>
                                 <td>${resultado.nome_avaliacao || "Sem Avaliação"}</td>
-                                <td>${resultado.acertos}</td>
-                                <td>${resultado.total}</td>
-                                <td>${resultado.porcentagem.toFixed(2)}%</td>
+                                <td>${resultado.portugues_porcentagem.toFixed(2)}%</td>
+                                <td>${resultado.matematica_porcentagem.toFixed(2)}%</td>
+                                <td>${respostas}</td>
                             </tr>
                         `;
                     });
                     corpo.innerHTML = html;
                 }
+                // Atualizar resumo
+                document.getElementById("participantes").innerText = data.participantes;
+                document.getElementById("ausentes").innerText = data.ausentes;
+                document.getElementById("media_portugues").innerText = data.media_portugues.toFixed(2) + "%";
+                document.getElementById("media_matematica").innerText = data.media_matematica.toFixed(2) + "%";
             } catch (error) {
                 console.error("Erro:", error);
                 alert("Erro ao carregar resultados.");
