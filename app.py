@@ -246,6 +246,14 @@ def resultados_unidade():
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
+    # Buscar questões relacionadas aos resultados
+    questoes_query = supabase.table('questoes').select('identificador, habilidade, etapa, nome_avaliacao')
+    if etapa:
+        questoes_query = questoes_query.eq('etapa', etapa)
+    if nome_avaliacao:
+        questoes_query = questoes_query.eq('nome_avaliacao', nome_avaliacao)
+    questoes = questoes_query.execute().data
+    
     # Buscar alunos da unidade pra calcular ausentes
     alunos_query = supabase.table('alunos').select('matricula').eq('unidade', unidade)
     if etapa:
@@ -284,6 +292,7 @@ def resultados_unidade():
     
     return jsonify({
         "resultados": resultados,
+        "questoes": questoes,
         "avaliacoes": avaliacoes,
         "etapas": etapas,
         "turmas": turmas,
@@ -313,7 +322,7 @@ def resultados_casa():
     
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
-        return jsonify({"resultados": [], "avaliacoes": [], "unidades": [], "etapas": [], "turmas": [], "participantes": 0, "ausentes": 0, "media_portugues": 0, "media_matematica": 0})
+        return jsonify({"resultados": [], "questoes": [], "avaliacoes": [], "unidades": [], "etapas": [], "turmas": [], "participantes": 0, "ausentes": 0, "media_portugues": 0, "media_matematica": 0})
     
     etapas_permitidas = usuario_response.data[0]['etapas'].split(',')
     
@@ -328,6 +337,14 @@ def resultados_casa():
     if turma:
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
+    
+    # Buscar questões relacionadas aos resultados
+    questoes_query = supabase.table('questoes').select('identificador, habilidade, etapa, nome_avaliacao').in_('etapa', etapas_permitidas)
+    if nome_avaliacao:
+        questoes_query = questoes_query.eq('nome_avaliacao', nome_avaliacao)
+    if etapa:
+        questoes_query = questoes_query.eq('etapa', etapa)
+    questoes = questoes_query.execute().data
     
     # Buscar alunos pra calcular ausentes
     alunos_query = supabase.table('alunos').select('matricula').in_('etapa', etapas_permitidas)
@@ -373,6 +390,7 @@ def resultados_casa():
     
     return jsonify({
         "resultados": resultados,
+        "questoes": questoes,
         "avaliacoes": avaliacoes,
         "unidades": unidades,
         "etapas": etapas,

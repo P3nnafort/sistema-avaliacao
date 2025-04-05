@@ -59,7 +59,7 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            max-width: 800px; 
+            max-width: 1200px; 
         }
         select, button { 
             margin: 10px; 
@@ -71,12 +71,14 @@
             width: 100%; 
             border-collapse: collapse; 
             margin: 20px 0; 
+            table-layout: fixed; 
         }
         th, td { 
             border: 1px solid #ccc; 
             padding: 8px; 
             text-align: center; 
             font-size: 12px; 
+            word-wrap: break-word; 
         }
         th { 
             background-color: #f0f0f0; 
@@ -123,18 +125,7 @@
         </div>
         
         <table id="tabelaResultados">
-            <thead>
-                <tr>
-                    <th>Matrícula</th>
-                    <th>Nome</th>
-                    <th>Etapa</th>
-                    <th>Turma</th>
-                    <th>Avaliação</th>
-                    <th>Português (%)</th>
-                    <th>Matemática (%)</th>
-                    <th>Respostas</th>
-                </tr>
-            </thead>
+            <thead id="tabelaCabecalho"></thead>
             <tbody id="tabelaCorpo"></tbody>
         </table>
         <button onclick="voltar()">Voltar</button>
@@ -143,6 +134,7 @@
     <script>
         let unidadeAtual = null;
         let cpfValido = null;
+        let questoes = [];
 
         async function inicializar() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -231,13 +223,33 @@
             try {
                 const response = await fetch(url);
                 const data = await response.json();
+                questoes = data.questoes;
+                const cabecalho = document.getElementById("tabelaCabecalho");
                 const corpo = document.getElementById("tabelaCorpo");
+
+                // Cabeçalho dinâmico
+                let cabecalhoHtml = `
+                    <tr>
+                        <th style="width: 100px;">Matrícula</th>
+                        <th style="width: 150px;">Nome</th>
+                        <th style="width: 80px;">Etapa</th>
+                        <th style="width: 80px;">Turma</th>
+                        <th style="width: 120px;">Avaliação</th>
+                        <th style="width: 80px;">Português (%)</th>
+                        <th style="width: 80px;">Matemática (%)</th>
+                `;
+                questoes.forEach((q, i) => {
+                    cabecalhoHtml += `<th style="width: 60px;">Q${i + 1} (${q.habilidade})</th>`;
+                });
+                cabecalhoHtml += `</tr>`;
+                cabecalho.innerHTML = cabecalhoHtml;
+
+                // Corpo da tabela
                 if (data.resultados.length === 0) {
-                    corpo.innerHTML = "<tr><td colspan='8'>Nenhum resultado encontrado.</td></tr>";
+                    corpo.innerHTML = `<tr><td colspan="${7 + questoes.length}">Nenhum resultado encontrado.</td></tr>`;
                 } else {
                     let html = "";
                     data.resultados.forEach(resultado => {
-                        const respostas = resultado.respostas ? Object.values(resultado.respostas).join(', ') : "N/A";
                         html += `
                             <tr>
                                 <td>${resultado.matricula}</td>
@@ -247,12 +259,16 @@
                                 <td>${resultado.nome_avaliacao || "Sem Avaliação"}</td>
                                 <td>${resultado.portugues_porcentagem.toFixed(2)}%</td>
                                 <td>${resultado.matematica_porcentagem.toFixed(2)}%</td>
-                                <td>${respostas}</td>
-                            </tr>
                         `;
+                        questoes.forEach((q, i) => {
+                            const resposta = resultado.respostas ? resultado.respostas[`q${i}`] : "-";
+                            html += `<td>${resposta.toUpperCase()}</td>`;
+                        });
+                        html += `</tr>`;
                     });
                     corpo.innerHTML = html;
                 }
+
                 // Atualizar resumo
                 document.getElementById("participantes").innerText = data.participantes;
                 document.getElementById("ausentes").innerText = data.ausentes;
