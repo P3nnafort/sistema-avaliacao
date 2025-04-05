@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>ATA de Ocorrências</title>
+    <title>Lista de Presença</title>
     <style>
         body { 
             text-align: center; 
@@ -61,22 +61,35 @@
             align-items: center; 
             max-width: 600px; 
         }
-        textarea, button { 
+        input, button { 
             margin: 10px; 
             padding: 5px; 
             width: 100%; 
-            max-width: 400px; 
+            max-width: 300px; 
         }
-        textarea { 
-            height: 200px; 
-            resize: vertical; 
+        .erro { 
+            color: red; 
+            display: none; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0; 
+        }
+        th, td { 
+            border: 1px solid #ccc; 
+            padding: 8px; 
+            text-align: center; 
+        }
+        th { 
+            background-color: #f0f0f0; 
         }
     </style>
 </head>
 <body>
     <header>
         <div class="titulo">
-            <h1>ATA de Ocorrências</h1>
+            <h1>Lista de Presença</h1>
         </div>
     </header>
 
@@ -87,36 +100,53 @@
         <img src="/static/logo2.png" alt="Logo 2">
     </div>
 
-    <div class="content">
-        <h2 id="tituloTurma"></h2>
-        <textarea id="ocorrencia" placeholder="Digite aqui as ocorrências da prova (opcional)"></textarea>
-        <button onclick="salvarOcorrencia()">Salvar Ocorrência</button>
-        <button onclick="semOcorrencia()">Sem Ocorrência</button>
+    <div class="content" id="login">
+        <label>Digite a senha da turma (TURMA_UNIDADEID):</label><br>
+        <input type="text" id="senha" placeholder="Ex.: 600_1"><br>
+        <p id="mensagemErro" class="erro">Senha inválida! Use o formato TURMA_UNIDADEID (ex.: 600_1)</p>
+        <button onclick="carregarLista()">Acessar Lista</button>
         <br><button onclick="window.location.href='/realizar_prova.html'">Voltar</button>
     </div>
 
+    <div class="content" id="lista" style="display: none;">
+        <table id="tabelaPresenca">
+            <thead id="tabelaCabecalho"></thead>
+            <tbody id="tabelaCorpo"></tbody>
+        </table>
+        <button id="iniciarBtn" onclick="iniciarProva()">Iniciar Prova</button>
+        <button id="finalizarBtn" onclick="finalizarProva()" style="display: none;">Finalizar Prova</button>
+    </div>
+
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const turma = urlParams.get("turma");
-        const unidade = urlParams.get("unidade");
+        let turmaAtual = null;
+        let unidadeAtual = null;
+        let alunos = [];
 
-        document.getElementById("tituloTurma").innerHTML = `Turma: ${turma} - Unidade: ${unidade}`;
+        async function carregarLista() {
+            const senha = document.getElementById("senha").value;
+            if (!senha || !senha.includes('_')) {
+                document.getElementById("mensagemErro").style.display = "block";
+                return;
+            }
 
-        async function salvarOcorrencia() {
-            const texto = document.getElementById("ocorrencia").value;
             try {
-                const response = await fetch("/salvar_ocorrencia", {
+                const response = await fetch("/lista_presenca", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ turma: turma, unidade: unidade, texto: texto })
+                    body: JSON.stringify({ senha: senha })
                 });
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    alert("Ocorrência salva com sucesso!");
-                    window.location.href = "/realizar_prova.html";
+                    [turmaAtual, unidadeId] = senha.split('_');
+                    unidadeAtual = data.alunos[0].unidade;
+                    alunos = data.alunos;
+                    document.getElementById("login").style.display = "none";
+                    document.getElementById("lista").style.display = "block";
+                    exibirTabela();
                 } else {
-                    alert("Erro ao salvar ocorrência!");
+                    document.getElementById("mensagemErro").style.display = "block";
+                    document.getElementById("mensagemErro").innerHTML = data.message;
                 }
             } catch (error) {
                 console.error("Erro:", error);
@@ -124,24 +154,87 @@
             }
         }
 
-        async function semOcorrencia() {
+        function exibirTabela() {
+            const cabecalho = document.getElementById("tabelaCabecalho");
+            const corpo = document.getElementById("tabelaCorpo");
+            if (alunos.length > 0) {
+                const unidade = alunos[0].unidade;
+                const etapa = alunos[0].etapa;
+                const turma = alunos[0].turma;
+                cabecalho.innerHTML = `
+                    <tr>
+                        <th>Unidade: ${unidade}</th>
+                        <th>Etapa: ${etapa}</th>
+                        <th>Turma: ${turma}</th>
+                    </tr>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Matrícula</th>
+                        <th>Presença</th>
+                    </tr>
+                `;
+                let html = "";
+                alunos.forEach(aluno => {
+                    html += `
+                        <tr>
+                            <td>${aluno.nome}</td>
+                            <td>${aluno.matricula}</td>
+                            <td>
+                                <input type="radio" name="presenca_${aluno.matricula}" value="P" checked> P
+                                <input type="radio" name="presenca_${aluno.matricula}" value="A"> A
+                            </td>
+                        </tr>
+                    `;
+                });
+                corpo.innerHTML = html;
+            }
+        }
+
+        async function iniciarProva() {
+            const presencas = alunos.map(aluno => ({
+                matricula: aluno.matricula,
+                presenca: document.querySelector(`input[name="presenca_${aluno.matricula}"]:checked`).value
+            }));
+
             try {
-                const response = await fetch("/salvar_ocorrencia", {
+                const response = await fetch("/salvar_presenca", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ turma: turma, unidade: unidade })
+                    body: JSON.stringify({ turma: turmaAtual, unidade: unidadeAtual, presencas: presencas, estado: "iniciada" })
                 });
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    alert("Prova finalizada sem ocorrências!");
-                    window.location.href = "/realizar_prova.html";
+                    alert("Prova iniciada com sucesso!");
+                    document.getElementById("iniciarBtn").style.display = "none"; // Esconde "Iniciar Prova"
+                    document.getElementById("finalizarBtn").style.display = "inline"; // Mostra "Finalizar Prova"
                 } else {
-                    alert("Erro ao finalizar sem ocorrência!");
+                    alert("Erro ao iniciar prova: " + data.message);
                 }
             } catch (error) {
-                console.error("Erro:", error);
-                alert("Erro ao conectar ao servidor.");
+                console.error("Erro na requisição:", error);
+                alert("Erro ao conectar ao servidor: " + error.message);
+            }
+        }
+
+        async function finalizarProva() {
+            try {
+                const response = await fetch("/salvar_presenca", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ turma: turmaAtual, unidade: unidadeAtual, presencas: [], estado: "finalizada" })
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Prova finalizada com sucesso!");
+                    window.location.href = `/ata_ocorrencias.html?turma=${turmaAtual}&unidade=${encodeURIComponent(unidadeAtual)}`;
+                } else {
+                    alert("Erro ao finalizar prova: " + data.message);
+                }
+            } catch (error) {
+                console.error("Erro na requisição:", error);
+                alert("Erro ao conectar ao servidor: " + error.message);
             }
         }
     </script>
