@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Resultados da Unidade</title>
+    <title>Resultados - Unidade</title>
     <style>
         body { 
             text-align: center; 
@@ -37,7 +37,6 @@
             top: 50%; 
             transform: translateY(-50%); 
             left: 20px; 
-            z-index: 10; 
         }
         .logo1 img { 
             height: 100px; 
@@ -48,7 +47,6 @@
             top: 50%; 
             transform: translateY(-50%); 
             right: 20px; 
-            z-index: 10; 
         }
         .logo2 img { 
             height: 300px; 
@@ -61,50 +59,33 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            max-width: 800px; 
-            width: 100%; 
-        }
-        .filters { 
-            margin-bottom: 10px; 
-            display: flex; 
-            gap: 10px; 
-            flex-wrap: wrap; 
+            max-width: 600px; 
         }
         select, button { 
-            margin: 5px; 
+            margin: 10px; 
             padding: 5px; 
-            font-size: 12px; 
-        }
-        .counters { 
-            margin-bottom: 10px; 
-            font-size: 14px; 
-        }
-        .erro { 
-            color: red; 
-            display: none; 
-        }
-        .table-container { 
             width: 100%; 
-            overflow-x: auto; 
-            margin: 20px 0; 
+            max-width: 300px; 
         }
         table { 
-            width: auto; 
-            min-width: 100%; 
+            width: 100%; 
             border-collapse: collapse; 
-            font-size: 10px; 
+            margin: 20px 0; 
         }
         th, td { 
-            border: 1px solid black; 
-            padding: 6px; 
-            white-space: nowrap; 
+            border: 1px solid #ccc; 
+            padding: 8px; 
+            text-align: center; 
+        }
+        th { 
+            background-color: #f0f0f0; 
         }
     </style>
 </head>
 <body>
     <header>
         <div class="titulo">
-            <h1>Resultados da Unidade</h1>
+            <h1>Resultados - Unidade</h1>
         </div>
     </header>
 
@@ -115,83 +96,61 @@
         <img src="/static/logo2.png" alt="Logo 2">
     </div>
 
-    <div class="content" id="login">
-        <label>Digite seu CPF (11 dígitos):</label><br>
-        <input type="text" id="cpf" placeholder="Ex.: 12345678901"><br>
-        <p id="mensagemErro" class="erro">O CPF deve ter exatamente 11 números!</p>
-        <p id="cpfInvalido" class="erro">CPF não encontrado ou sem permissão!</p>
-        <button onclick="verificarCpf()">Acessar Resultados</button>
-        <br><button onclick="window.location.href='/index.html'">Voltar</button>
-    </div>
-
-    <div class="content" id="resultados" style="display: none;">
-        <div class="filters">
-            <select id="filtroEtapa" onchange="atualizarFiltros()">
-                <option value="">Selecione Etapa</option>
-            </select>
-            <select id="filtroTurma" onchange="carregarResultadosFiltrados()" disabled>
-                <option value="">Selecione Turma</option>
-            </select>
-        </div>
-        <div class="counters">
-            <span id="contadorFizeram">Alunos que fizeram: 0</span> | 
-            <span id="contadorAusentes">Alunos ausentes: 0</span>
-        </div>
-        <div class="filters">
-            <select id="visualizarNomeAvaliacao">
-                <option value="">Selecione Nome da Avaliação</option>
-                <option value="Avaliação 1">Avaliação 1</option>
-                <option value="Avaliação 2">Avaliação 2</option>
-                <option value="Avaliação 3">Avaliação 3</option>
-                <option value="Avaliação 4">Avaliação 4</option>
-                <option value="Avaliação 5">Avaliação 5</option>
-                <option value="Avaliação 6">Avaliação 6</option>
-            </select>
-            <select id="visualizarEtapa"></select>
-            <button onclick="visualizarAvaliacao()">Visualizar Avaliação</button>
-        </div>
-        <div class="table-container">
-            <table id="tabelaResultados">
-                <thead id="cabecalhoResultados"></thead>
-                <tbody id="dadosResultados"></tbody>
-            </table>
-        </div>
-        <button onclick="window.location.href='/index.html'">Voltar</button>
+    <div class="content">
+        <select id="avaliacao">
+            <option value="">Todas as Avaliações</option>
+        </select>
+        <select id="etapa" onchange="carregarTurmas()">
+            <option value="">Todas as Etapas</option>
+        </select>
+        <select id="turma">
+            <option value="">Todas as Turmas</option>
+        </select>
+        <button onclick="carregarResultados()">Filtrar</button>
+        <table id="tabelaResultados">
+            <thead>
+                <tr>
+                    <th>Matrícula</th>
+                    <th>Nome</th>
+                    <th>Etapa</th>
+                    <th>Turma</th>
+                    <th>Avaliação</th>
+                    <th>Acertos</th>
+                    <th>Total</th>
+                    <th>Porcentagem</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaCorpo"></tbody>
+        </table>
+        <button onclick="voltar()">Voltar</button>
     </div>
 
     <script>
-        let maxQuestoes = 0;
-        let unidadeAtual = "";
-        let etapasDisponiveis = [];
-        let turmasDisponiveis = [];
-        let cpfAtual = "";
+        let unidadeAtual = null;
+        let cpfValido = null;
 
-        async function verificarCpf() {
-            let cpf = document.getElementById("cpf").value;
-            let mensagemErro = document.getElementById("mensagemErro");
-            let cpfInvalido = document.getElementById("cpfInvalido");
-
-            if (!/^\d{11}$/.test(cpf)) {
-                mensagemErro.style.display = "block";
-                cpfInvalido.style.display = "none";
+        async function inicializar() {
+            const urlParams = new URLSearchParams(window.location.search);
+            cpfValido = urlParams.get("cpf");
+            if (!cpfValido) {
+                alert("Acesso não autorizado. Por favor, faça login.");
+                window.location.href = '/opcoes_unidade.html';
                 return;
             }
-
             try {
                 const response = await fetch("/verificar_cpf_unidade", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ cpf: cpf })
+                    body: JSON.stringify({ cpf: cpfValido })
                 });
                 const data = await response.json();
-
                 if (data.status === "success") {
-                    cpfAtual = cpf;
                     unidadeAtual = data.unidade;
-                    window.location.href = `/opcoes_unidade.html?cpf=${cpf}`;
+                    await carregarFiltros();
+                    await carregarResultados();
                 } else {
-                    mensagemErro.style.display = "none";
-                    cpfInvalido.style.display = "block";
+                    alert("Erro ao carregar unidade: " + data.message);
+                    window.location.href = '/opcoes_unidade.html';
                 }
             } catch (error) {
                 console.error("Erro:", error);
@@ -199,105 +158,96 @@
             }
         }
 
-        async function carregarResultadosFiltrados() {
-            const urlParams = new URLSearchParams(window.location.search);
-            cpfAtual = urlParams.get("cpf");
-            const etapa = document.getElementById("filtroEtapa").value;
-            const turma = document.getElementById("filtroTurma").value;
+        async function carregarFiltros() {
+            try {
+                const response = await fetch(`/resultados_unidade?unidade=${unidadeAtual}`);
+                const data = await response.json();
+                
+                const avaliacaoSelect = document.getElementById("avaliacao");
+                avaliacaoSelect.innerHTML = '<option value="">Todas as Avaliações</option>';
+                data.avaliacoes.forEach(avaliacao => {
+                    avaliacaoSelect.innerHTML += `<option value="${avaliacao}">${avaliacao}</option>`;
+                });
+                
+                const etapaSelect = document.getElementById("etapa");
+                etapaSelect.innerHTML = '<option value="">Todas as Etapas</option>';
+                data.etapas.forEach(etapa => {
+                    etapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
+                });
+                
+                const turmaSelect = document.getElementById("turma");
+                turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
+                data.turmas.forEach(turma => {
+                    turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar filtros.");
+            }
+        }
+
+        async function carregarTurmas() {
+            const etapa = document.getElementById("etapa").value;
+            try {
+                const response = await fetch(`/resultados_unidade?unidade=${unidadeAtual}${etapa ? '&etapa=' + etapa : ''}`);
+                const data = await response.json();
+                
+                const turmaSelect = document.getElementById("turma");
+                turmaSelect.innerHTML = '<option value="">Todas as Turmas</option>';
+                data.turmas.forEach(turma => {
+                    turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
+                });
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao carregar turmas.");
+            }
+        }
+
+        async function carregarResultados() {
+            const avaliacao = document.getElementById("avaliacao").value;
+            const etapa = document.getElementById("etapa").value;
+            const turma = document.getElementById("turma").value;
+            
+            let url = `/resultados_unidade?unidade=${unidadeAtual}`;
+            if (avaliacao) url += `&nome_avaliacao=${avaliacao}`;
+            if (etapa) url += `&etapa=${etapa}`;
+            if (turma) url += `&turma=${turma}`;
 
             try {
-                let url = `/resultados_unidade?unidade=${encodeURIComponent(unidadeAtual)}`;
-                if (etapa) url += `&etapa=${etapa}`;
-                if (turma && etapa) url += `&turma=${turma}`;
                 const response = await fetch(url);
                 const data = await response.json();
-
-                etapasDisponiveis = data.etapas;
-                turmasDisponiveis = data.turmas;
-                atualizarFiltros();
-
-                maxQuestoes = Math.max(...data.resultados.map(r => Object.keys(r.respostas).length), 0);
-
-                const thead = document.getElementById("cabecalhoResultados");
-                let cabecalho = "<tr><th>Matrícula</th><th>Nome</th><th>Unidade</th><th>Etapa</th><th>Turma</th>";
-                for (let i = 0; i < maxQuestoes; i++) {
-                    cabecalho += `<th>Q${i + 1}</th>`;
+                const corpo = document.getElementById("tabelaCorpo");
+                if (data.resultados.length === 0) {
+                    corpo.innerHTML = "<tr><td colspan='8'>Nenhum resultado encontrado.</td></tr>";
+                } else {
+                    let html = "";
+                    data.resultados.forEach(resultado => {
+                        html += `
+                            <tr>
+                                <td>${resultado.matricula}</td>
+                                <td>${resultado.nome}</td>
+                                <td>${resultado.etapa}</td>
+                                <td>${resultado.turma}</td>
+                                <td>${resultado.nome_avaliacao || "Sem Avaliação"}</td>
+                                <td>${resultado.acertos}</td>
+                                <td>${resultado.total}</td>
+                                <td>${resultado.porcentagem.toFixed(2)}%</td>
+                            </tr>
+                        `;
+                    });
+                    corpo.innerHTML = html;
                 }
-                cabecalho += "<th>Acertos/Total (%) | LP (%) | Mat (%)</th></tr>";
-                thead.innerHTML = cabecalho;
-
-                const tbody = document.getElementById("dadosResultados");
-                let html = "";
-                data.resultados.forEach(resultado => {
-                    html += "<tr>";
-                    html += `<td>${resultado.matricula}</td>`;
-                    html += `<td>${resultado.nome}</td>`;
-                    html += `<td>${resultado.unidade}</td>`;
-                    html += `<td>${resultado.etapa}</td>`;
-                    html += `<td>${resultado.turma}</td>`;
-                    for (let i = 0; i < maxQuestoes; i++) {
-                        const resposta = resultado.respostas[`q${i}`] || "-";
-                        html += `<td>${resposta.toUpperCase()}</td>`;
-                    }
-                    html += `<td>${resultado.acertos}/${resultado.total} (${resultado.porcentagem.toFixed(2)}%) | ${resultado.portugues_acertos}/${resultado.portugues_total} (${resultado.portugues_porcentagem.toFixed(2)}%) | ${resultado.matematica_acertos}/${resultado.matematica_total} (${resultado.matematica_porcentagem.toFixed(2)}%)</td>`;
-                    html += "</tr>";
-                });
-                tbody.innerHTML = html;
-
-                document.getElementById("contadorFizeram").textContent = `Alunos que fizeram: ${data.fizeram}`;
-                document.getElementById("contadorAusentes").textContent = `Alunos ausentes: ${data.ausentes}`;
-                document.getElementById("resultados").style.display = "block";
-
-                const visualizarEtapaSelect = document.getElementById("visualizarEtapa");
-                visualizarEtapaSelect.innerHTML = '<option value="">Selecione Etapa</option>';
-                etapasDisponiveis.forEach(etapa => {
-                    visualizarEtapaSelect.innerHTML += `<option value="${etapa}">${etapa}</option>`;
-                });
             } catch (error) {
                 console.error("Erro:", error);
                 alert("Erro ao carregar resultados.");
             }
         }
 
-        function atualizarFiltros() {
-            const etapaSelect = document.getElementById("filtroEtapa");
-            const turmaSelect = document.getElementById("filtroTurma");
-            const etapaSelecionada = etapaSelect.value;
-
-            etapaSelect.innerHTML = '<option value="">Selecione Etapa</option>';
-            etapasDisponiveis.forEach(etapa => {
-                etapaSelect.innerHTML += `<option value="${etapa}" ${etapa === etapaSelecionada ? 'selected' : ''}>${etapa}</option>`;
-            });
-
-            turmaSelect.innerHTML = '<option value="">Selecione Turma</option>';
-            if (etapaSelecionada) {
-                turmaSelect.disabled = false;
-                turmasDisponiveis.forEach(turma => {
-                    turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
-                });
-            } else {
-                turmaSelect.disabled = true;
-            }
-
-            carregarResultadosFiltrados();
+        function voltar() {
+            window.location.href = `/opcoes_unidade.html?cpf=${cpfValido}`;
         }
 
-        function visualizarAvaliacao() {
-            const nome_avaliacao = document.getElementById("visualizarNomeAvaliacao").value;
-            const etapa = document.getElementById("visualizarEtapa").value;
-            if (!nome_avaliacao || !etapa) {
-                alert("Por favor, selecione o nome da avaliação e a etapa.");
-                return;
-            }
-            window.location.href = `/visualizar_avaliacao.html?nome_avaliacao=${encodeURIComponent(nome_avaliacao)}&etapa=${etapa}`;
-        }
-
-        // Carrega resultados se já tiver CPF (vindo de opcoes_unidade.html)
-        if (window.location.search.includes("cpf")) {
-            document.getElementById("login").style.display = "none";
-            document.getElementById("resultados").style.display = "block";
-            carregarResultadosFiltrados();
-        }
+        window.onload = inicializar;
     </script>
 </body>
 </html>

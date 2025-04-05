@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, Response
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from supabase import create_client, Client
 import os
@@ -198,38 +198,37 @@ def verificar_cpf_unidade():
 @app.route('/resultados_unidade')
 def resultados_unidade():
     unidade = request.args.get('unidade')
+    nome_avaliacao = request.args.get('nome_avaliacao')
     etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     
+    # Buscar resultados da unidade
     resultados_query = supabase.table('resultados').select('*').eq('unidade', unidade)
+    if nome_avaliacao:
+        resultados_query = resultados_query.eq('nome_avaliacao', nome_avaliacao)
     if etapa:
         resultados_query = resultados_query.eq('etapa', etapa)
     if turma:
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
-    alunos_query = supabase.table('alunos').select('*').eq('unidade', unidade)
-    if etapa:
-        alunos_query = alunos_query.eq('etapa', etapa)
-    if turma:
-        alunos_query = alunos_query.eq('turma', turma)
-    alunos_unidade = alunos_query.execute().data
+    # Buscar avaliações disponíveis
+    avaliacoes_query = supabase.table('resultados').select('nome_avaliacao').eq('unidade', unidade).execute()
+    avaliacoes = sorted(set(r.get('nome_avaliacao', 'Sem Avaliação') for r in avaliacoes_query.data if r.get('nome_avaliacao')))
     
-    fizeram = len(resultados)
-    ausentes = len(alunos_unidade) - fizeram
+    # Buscar etapas disponíveis
+    etapas_query = supabase.table('resultados').select('etapa').eq('unidade', unidade).execute()
+    etapas = sorted(set(r['etapa'] for r in etapas_query.data))
     
-    etapas_query = supabase.table('alunos').select('etapa').eq('unidade', unidade).execute()
-    etapas = sorted(set(a['etapa'] for a in etapas_query.data))
-    
-    turmas_query = supabase.table('alunos').select('turma').eq('unidade', unidade)
+    # Buscar turmas disponíveis (filtradas por etapa se selecionada)
+    turmas_query = supabase.table('resultados').select('turma').eq('unidade', unidade)
     if etapa:
         turmas_query = turmas_query.eq('etapa', etapa)
-    turmas = sorted(set(a['turma'] for a in turmas_query.execute().data))
+    turmas = sorted(set(r['turma'] for r in turmas_query.execute().data))
     
     return jsonify({
         "resultados": resultados,
-        "fizeram": fizeram,
-        "ausentes": ausentes,
+        "avaliacoes": avaliacoes,
         "etapas": etapas,
         "turmas": turmas
     })
@@ -247,16 +246,21 @@ def verificar_cpf_casa():
 @app.route('/resultados_casa')
 def resultados_casa():
     cpf = request.args.get('cpf')
+    nome_avaliacao = request.args.get('nome_avaliacao')
     unidade = request.args.get('unidade')
     etapa = request.args.get('etapa')
     turma = request.args.get('turma')
     
     usuario_response = supabase.table('coordenadores').select('*').eq('cpf', cpf).execute()
     if not usuario_response.data:
-        return jsonify({"resultados": [], "fizeram": 0, "ausentes": 0, "unidades": [], "etapas": [], "turmas": []})
+        return jsonify({"resultados": [], "avaliacoes": [], "unidades": [], "etapas": [], "turmas": []})
     
     etapas_permitidas = usuario_response.data[0]['etapas'].split(',')
+    
+    # Buscar resultados
     resultados_query = supabase.table('resultados').select('*').in_('etapa', etapas_permitidas)
+    if nome_avaliacao:
+        resultados_query = resultados_query.eq('nome_avaliacao', nome_avaliacao)
     if unidade:
         resultados_query = resultados_query.eq('unidade', unidade)
     if etapa:
@@ -265,29 +269,27 @@ def resultados_casa():
         resultados_query = resultados_query.eq('turma', turma)
     resultados = resultados_query.execute().data
     
-    alunos_query = supabase.table('alunos').select('*').in_('etapa', etapas_permitidas)
-    if unidade:
-        alunos_query = alunos_query.eq('unidade', unidade)
-    if etapa:
-        alunos_query = alunos_query.eq('etapa', etapa)
-    if turma:
-        alunos_query = alunos_query.eq('turma', turma)
-    alunos_casa = alunos_query.execute().data
+    # Buscar avaliações disponíveis
+    avaliacoes_query = supabase.table('resultados').select('nome_avaliacao').in_('etapa', etapas_permitidas).execute()
+    avaliacoes = sorted(set(r.get('nome_avaliacao', 'Sem Avaliação') for r in avaliacoes_query.data if r.get('nome_avaliacao')))
     
-    fizeram = len(resultados)
-    ausentes = len(alunos_casa) - fizeram
+    # Buscar unidades disponíveis
+    unidades_query = supabase.table('resultados').select('unidade').in_('etapa', etapas_permitidas).execute()
+    unidades = sorted(set(r['unidade'] for r in unidades_query.data))
     
-    unidades = sorted(set(a['unidade'] for a in alunos_casa))
-    etapas = sorted(set(a['etapa'] for a in alunos_casa))
-    turmas_query = supabase.table('alunos').select('turma').in_('etapa', etapas_permitidas)
+    # Buscar etapas disponíveis
+    etapas_query = supabase.table('resultados').select('etapa').in_('etapa', etapas_permitidas).execute()
+    etapas = sorted(set(r['etapa'] for r in etapas_query.data))
+    
+    # Buscar turmas disponíveis (filtradas por etapa se selecionada)
+    turmas_query = supabase.table('resultados').select('turma').in_('etapa', etapas_permitidas)
     if etapa:
         turmas_query = turmas_query.eq('etapa', etapa)
-    turmas = sorted(set(a['turma'] for a in turmas_query.execute().data))
+    turmas = sorted(set(r['turma'] for r in turmas_query.execute().data))
     
     return jsonify({
         "resultados": resultados,
-        "fizeram": fizeram,
-        "ausentes": ausentes,
+        "avaliacoes": avaliacoes,
         "unidades": unidades,
         "etapas": etapas,
         "turmas": turmas
@@ -343,7 +345,8 @@ def salvar_resultado():
         "portugues_porcentagem": portugues_porcentagem,
         "matematica_acertos": matematica_acertos,
         "matematica_total": matematica_total,
-        "matematica_porcentagem": matematica_porcentagem
+        "matematica_porcentagem": matematica_porcentagem,
+        "nome_avaliacao": questoes[0]['nome_avaliacao'] if questoes else "Sem Avaliação"  # Adiciona nome da avaliação
     }
     
     supabase.table('resultados').insert(resultado).execute()
@@ -576,29 +579,6 @@ def listar_ocorrencias():
     
     response = query.execute()
     return jsonify({"ocorrencias": response.data})
-
-@app.route('/download_ocorrencia', methods=['GET'])
-def download_ocorrencia():
-    pdf_url = request.args.get('url')
-    if not pdf_url:
-        return jsonify({"status": "error", "message": "URL não fornecida"}), 400
-    
-    # Extrair o nome do arquivo da URL
-    filename = pdf_url.split('/')[-1]
-    if not filename.endswith('.pdf'):
-        filename += '.pdf'
-    
-    # Baixar o arquivo do Supabase
-    response = supabase.storage.from_('ocorrencias').download(filename)
-    
-    # Criar resposta com cabeçalhos manuais
-    return Response(
-        response,
-        mimetype='application/pdf',
-        headers={
-            'Content-Disposition': f'attachment; filename="{filename}"'
-        }
-    )
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
