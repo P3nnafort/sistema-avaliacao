@@ -5,18 +5,22 @@
     <title>Lista de Presença</title>
     <style>
         body { 
-            text-align: center; 
-            margin: 0; 
-            padding: 0; 
-            font-family: Arial, sans-serif; 
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
             background-image: url('static/background.png');
-            background-size: cover; 
-            background-position: center; 
-            background-repeat: no-repeat; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            background-size: 100% 100vh;
+            /* Tamanho da imagem ajustado à janela visível */
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            /* Faz o fundo ficar fixo enquanto o conteúdo rola */
+            min-height: 100vh;
+            /* Altura mínima da janela */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         header { 
             width: 100%; 
