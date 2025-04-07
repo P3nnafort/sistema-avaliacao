@@ -56,9 +56,9 @@ def serve_criar_prova():
 def serve_visualizar_prova():
     return send_file('visualizar_prova.html')
 
-@app.route('/visualizar_avaliacao.html')
-def serve_visualizar_avaliacao():
-    return send_file('visualizar_avaliacao.html')
+@app.route('/visualizar_avaliacao_unidade.html')
+def serve_visualizar_avaliacao_unidade():
+    return send_file('visualizar_avaliacao_unidade.html')
 
 @app.route('/informativos_unidade.html')
 def serve_informativos_unidade():
@@ -685,9 +685,9 @@ def listar_ocorrencias():
     response = query.execute()
     return jsonify({"ocorrencias": response.data})
 
-@app.route('/visualizar_avaliacao_restrita.html')
-def serve_visualizar_avaliacao_restrita():
-    return send_file('visualizar_avaliacao_restrita.html')
+@app.route('/visualizar_avaliacao_casa.html')
+def serve_visualizar_avaliacao_casa():
+    return send_file('visualizar_avaliacao_casa.html')
 
 @app.route('/listar_avaliacoes_restritas')
 def listar_avaliacoes_restritas():
@@ -695,18 +695,21 @@ def listar_avaliacoes_restritas():
     if not cpf:
         return jsonify({"status": "error", "message": "CPF não fornecido"}), 400
     
-    # Verificar as etapas permitidas do usuário
+    # Tenta encontrar em coordenadores
     response = supabase.table('coordenadores').select('etapas').eq('cpf', cpf).execute()
-    if not response.data:
-        return jsonify({"status": "error", "message": "CPF não encontrado ou sem permissão"}), 404
+    if response.data:
+        etapas_permitidas = response.data[0]['etapas'].split(',')
+    else:
+        # Se não encontrado em coordenadores, tenta em diretores
+        response = supabase.table('diretores').select('etapas').eq('cpf', cpf).execute()
+        if not response.data:
+            return jsonify({"status": "error", "message": "CPF não encontrado ou sem permissão"}), 404
+        etapas_permitidas = response.data[0]['etapas'].split(',')
     
-    etapas_permitidas = response.data[0]['etapas'].split(',')
-    
-    # Listar avaliações apenas para as etapas permitidas
+    # Busca avaliações nas etapas permitidas
     response = supabase.table('questoes').select('nome_avaliacao, etapa').in_('etapa', etapas_permitidas).execute()
     avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
     return jsonify({"avaliacoes": avaliacoes})
-
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, debug=False)

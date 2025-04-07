@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Visualizar Avaliação Completa</title>
+    <title>Visualizar Avaliações Casa</title>
     <style>
         body { 
             text-align: center; 
@@ -67,18 +67,18 @@
             width: 100%; 
         }
         .avaliacao-lista button { 
-            display: inline-block; /* Permite crescer com o texto */
-            width: auto; /* Remove largura fixa */
-            min-width: 150px; /* Tamanho mínimo pra não ficar muito pequeno */
+            display: inline-block; 
+            width: auto; 
+            min-width: 150px; 
             margin: 5px 0; 
-            padding: 10px 15px; /* Padding ajustado pra mais espaço interno */
+            padding: 10px 15px; 
             background-color: #f0f0f0; 
             border: 1px solid #ccc; 
             cursor: pointer; 
-            text-align: center; /* Centraliza o texto */
-            white-space: nowrap; /* Impede quebra de linha */
-            overflow: hidden; /* Esconde excesso, mas não será necessário com width: auto */
-            text-overflow: ellipsis; /* Adiciona "..." se ainda transbordar */
+            text-align: center; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
         }
         .avaliacao-lista button:hover { 
             background-color: #e0e0e0; 
@@ -99,7 +99,7 @@
 <body>
     <header>
         <div class="titulo">
-            <h1>Visualizar Avaliação Completa</h1>
+            <h1>Visualizar Avaliação</h1>
         </div>
     </header>
 
@@ -113,21 +113,28 @@
     <div class="content">
         <div class="avaliacao-lista" id="avaliacaoLista"></div>
         <div id="prova"></div>
-        <button onclick="window.location.href='/escolha_avaliacao_unidade.html'">Voltar</button>
+        <button onclick="window.location.href='/escolha_avaliacao_casa.html?cpf=' + urlParams.get('cpf')">Voltar</button>
     </div>
 
     <script>
         let questoes = [];
         let questaoAtual = 0;
+        const urlParams = new URLSearchParams(window.location.search);
+        const cpf = urlParams.get("cpf");
 
         async function carregarListaAvaliacoes() {
+            if (!cpf) {
+                document.getElementById("avaliacaoLista").innerHTML = "<p>CPF não fornecido. Volte à página anterior.</p>";
+                return;
+            }
+
             try {
-                const response = await fetch("/listar_avaliacoes");
+                const response = await fetch(`/listar_avaliacoes_restritas?cpf=${cpf}`);
                 const data = await response.json();
 
                 const listaDiv = document.getElementById("avaliacaoLista");
                 if (data.avaliacoes.length === 0) {
-                    listaDiv.innerHTML = "<p>Nenhuma avaliação disponível.</p>";
+                    listaDiv.innerHTML = "<p>Nenhuma avaliação disponível para suas etapas.</p>";
                 } else {
                     let html = "<h2>Selecione uma Avaliação</h2>";
                     data.avaliacoes.forEach(avaliacao => {
@@ -195,13 +202,8 @@
             }
         }
 
+        // Carregar as avaliações automaticamente ao carregar a página
         carregarListaAvaliacoes();
-        const urlParams = new URLSearchParams(window.location.search);
-        const nome_avaliacao = urlParams.get("nome_avaliacao");
-        const etapa = urlParams.get("etapa");
-        if (nome_avaliacao && etapa) {
-            carregarAvaliacao(nome_avaliacao, etapa);
-        }
     </script>
 </body>
 </html>
