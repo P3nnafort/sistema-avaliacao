@@ -2,146 +2,242 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de Avaliações Externas">
+    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
+    <meta name="generator" content="Hugo 0.145.0">
     <title>Resultados - Casa da Avaliação</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <!-- Importando a fonte Montserrat do Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" href="../assets/img/favicons/apple-touch-icon.png" sizes="180x180">
+    <link rel="icon" href="../assets/img/favicons/favicon-32x32.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="../assets/img/favicons/favicon-16x16.png" sizes="16x16" type="image/png">
+    <link rel="manifest" href="../assets/img/favicons/manifest.json">
+    <link rel="mask-icon" href="../assets/img/favicons/safari-pinned-tab.svg" color="#712cf9">
+    <link rel="icon" href="../assets/img/favicons/favicon.ico">
+    <meta name="theme-color" content="#712cf9">
+
     <style>
-        body { 
-            text-align: center; 
-            margin: 0; 
-            padding: 0; 
-            font-family: Arial, sans-serif; 
-            background-image: url('static/background.png');
+        /* Estilo do background responsivo */
+        body {
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-image: url('/static/background.png');
             background-size: 100% 100vh;
-            background-attachment: fixed; 
-            background-position: center; 
-            background-repeat: no-repeat; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+            background-attachment: fixed;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        header { 
-            width: 100%; 
-            background-color: #f0f0f0; 
-            padding: 10px 0; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+
+        /* Ajuste para melhorar o contraste do conteúdo com o fundo */
+        main {
+            background-color: rgba(255, 255, 255, 0.027);
+            border-radius: 10px;
+            padding: 20px;
+            flex-grow: 1;
+            width: 100%;
         }
-        .titulo { 
-            width: 100%; 
-            text-align: center; 
+
+        /* Header ajustado */
+        header {
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.175);
+            width: 100%;
         }
-        .titulo h1 { 
-            margin: 0; 
-            font-size: 24px; 
+
+        header a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
         }
-        .logo1 { 
-            position: fixed; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            left: 20px; 
+
+        .header-img {
+            max-height: 75px;
+            width: auto;
         }
-        .logo1 img { 
-            height: 100px; 
-            width: auto; 
+
+        .header-img-secondary {
+            max-height: 50px;
+            width: auto;
         }
-        .logo2 { 
-            position: fixed; 
-            top: 50%; 
-            transform: translateY(-50%); 
-            right: 20px; 
+
+        @media (max-width: 576px) {
+            .header-img {
+                max-height: 40px;
+            }
+            .header-img-secondary {
+                max-height: 20px;
+            }
         }
-        .logo2 img { 
-            height: 300px; 
-            width: auto; 
+
+        .montserrat-bold {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
         }
-        .content { 
-            margin-top: 60px; 
-            margin-left: 150px; 
-            margin-right: 350px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            width: 100%; 
-            max-width: 1200px; 
+
+        /* Ajuste fino para centralizar mais os itens do header */
+        .header-container {
+            padding-left: 40px; /* Reduz o espaço à esquerda */
+            padding-right: 40px; /* Reduz o espaço à direita */
         }
-        select, button { 
-            margin: 10px; 
-            padding: 5px; 
-            width: 100%; 
-            max-width: 300px; 
+
+        /* Conteúdo */
+        .content {
+            margin-top: 60px;
+            margin-left: auto;
+            margin-right: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 15px; /* Adiciona padding lateral para telas pequenas */
         }
-        .tabela-container { 
-            width: 100%; 
-            overflow-x: auto; 
-            margin: 20px 0; 
+
+        select {
+            margin: 10px;
+            padding: 5px;
+            width: 100%;
+            max-width: 300px;
         }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            min-width: 1200px; 
+
+        /* Estilo dos botões ajustado para .btn-primary */
+        .btn-primary {
+            margin: 10px;
+            padding: 5px;
+            width: 100%;
+            max-width: 300px;
         }
-        th, td { 
-            border: 1px solid #ccc; 
-            padding: 8px; 
-            text-align: center; 
-            font-size: 12px; 
-            white-space: nowrap; 
+
+        .tabela-container {
+            width: 100%;
+            overflow-x: auto;
+            margin: 20px 0;
         }
-        th { 
-            background-color: #f0f0f0; 
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            max-width: 100%; /* Permite que a tabela se ajuste à largura disponível */
         }
-        #resumo { 
-            margin: 10px 0; 
-            text-align: left; 
-            width: 100%; 
-            max-width: 600px; 
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+            white-space: normal; /* Permite quebra de linha */
+            word-wrap: break-word; /* Quebra palavras longas */
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        #resumo {
+            margin: 10px 0;
+            text-align: left;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Div para o label "Resultados - Casa da Avaliação" */
+        .resultados-label {
+            margin-bottom: 40px;
+            margin-top: -20px;
+        }
+
+        /* Media queries para responsividade */
+        @media (max-width: 768px) {
+            .content {
+                padding: 0 10px;
+            }
+            select, .btn-primary {
+                max-width: 100%; /* Usa toda a largura disponível em telas menores */
+            }
+            #resumo {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content {
+                margin-top: 30px; /* Reduz margem superior em telas pequenas */
+            }
+            th, td {
+                font-size: 10px; /* Reduz fonte para caber melhor */
+                padding: 4px; /* Reduz padding */
+            }
         }
     </style>
 </head>
+
 <body>
-    <header>
-        <div class="titulo">
-            <h1>Resultados - Casa da Avaliação</h1>
-        </div>
-    </header>
+    <main>
+        <div class="container py-4 header-container">
+            <!-- Header ajustado com padding para centralizar mais -->
+            <header class="pb-3 mb-4 border-bottom">
+                <a href="/" class="d-flex align-items-center text-body-emphasis text-decoration-none">
+                    <img src="/static/logo2.png" alt="Logo" class="me-2 header-img">
+                    <span class="fs-4 montserrat-bold">Sistema de Avaliações Externas - Digital</span>
+                    <img src="/static/logo1.png" alt="Outra Imagem" class="ms-auto header-img-secondary">
+                </a>
+            </header>
 
-    <div class="logo1">
-        <img src="/static/logo1.png" alt="Logo 1">
-    </div>
-    <div class="logo2">
-        <img src="/static/logo2.png" alt="Logo 2">
-    </div>
-
-    <div class="content">
-        <select id="avaliacao">
-            <option value="">Todas as Avaliações</option>
-        </select>
-        <select id="unidade">
-            <option value="">Todas as Unidades</option>
-        </select>
-        <select id="etapa" onchange="carregarTurmas()">
-            <option value="">Todas as Etapas</option>
-        </select>
-        <select id="turma">
-            <option value="">Todas as Turmas</option>
-        </select>
-        <button onclick="carregarResultados()">Filtrar</button>
-        
-        <div id="resumo">
-            <p>Participantes: <span id="participantes">0</span></p>
-            <p>Ausentes: <span id="ausentes">0</span></p>
-            <p>Média Língua Portuguesa: <span id="media_portugues">0%</span></p>
-            <p>Média Matemática: <span id="media_matematica">0%</span></p>
+            <div class="content">
+                <div class="resultados-label">
+                    <label class="montserrat-bold">Resultados - Casa da Avaliação</label>
+                </div>
+                <select id="avaliacao">
+                    <option value="">Todas as Avaliações</option>
+                </select>
+                <select id="unidade">
+                    <option value="">Todas as Unidades</option>
+                </select>
+                <select id="etapa" onchange="carregarTurmas()">
+                    <option value="">Todas as Etapas</option>
+                </select>
+                <select id="turma">
+                    <option value="">Todas as Turmas</option>
+                </select>
+                <button class="btn btn-primary" onclick="carregarResultados()">Filtrar</button>
+                
+                <div id="resumo">
+                    <p>Participantes: <span id="participantes">0</span></p>
+                    <p>Ausentes: <span id="ausentes">0</span></p>
+                    <p>Média Língua Portuguesa: <span id="media_portugues">0%</span></p>
+                    <p>Média Matemática: <span id="media_matematica">0%</span></p>
+                </div>
+                
+                <div class="tabela-container">
+                    <table id="tabelaResultados">
+                        <thead id="tabelaCabecalho"></thead>
+                        <tbody id="tabelaCorpo"></tbody>
+                    </table>
+                </div>
+                <button class="btn btn-primary" onclick="voltar()">Voltar</button>
+            </div>
         </div>
-        
-        <div class="tabela-container">
-            <table id="tabelaResultados">
-                <thead id="tabelaCabecalho"></thead>
-                <tbody id="tabelaCorpo"></tbody>
-            </table>
-        </div>
-        <button onclick="voltar()">Voltar</button>
-    </div>
+    </main>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <!-- Script ajustado -->
     <script>
         let cpfValido = null;
         let questoes = [];
@@ -163,7 +259,7 @@
                 const data = await response.json();
                 if (data.status === "success") {
                     await carregarFiltros();
-                    await carregarResultados();
+                    // Não chamar carregarResultados() aqui diretamente
                 } else {
                     alert("Erro ao carregar dados: " + data.message);
                     window.location.href = '/casa_avaliacao.html';
@@ -244,7 +340,10 @@
                 const cabecalho = document.getElementById("tabelaCabecalho");
                 const corpo = document.getElementById("tabelaCorpo");
 
-                // Cabeçalho dinâmico
+                if (!cabecalho || !corpo) {
+                    throw new Error("Elementos da tabela não encontrados no DOM");
+                }
+
                 let cabecalhoHtml = `
                     <tr>
                         <th>Matrícula</th>
@@ -262,7 +361,6 @@
                 cabecalhoHtml += `</tr>`;
                 cabecalho.innerHTML = cabecalhoHtml;
 
-                // Corpo da tabela
                 if (data.resultados.length === 0) {
                     corpo.innerHTML = `<tr><td colspan="${8 + questoes.length}">Nenhum resultado encontrado.</td></tr>`;
                 } else {
@@ -288,7 +386,6 @@
                     corpo.innerHTML = html;
                 }
 
-                // Atualizar resumo
                 document.getElementById("participantes").innerText = data.participantes;
                 document.getElementById("ausentes").innerText = data.ausentes;
                 document.getElementById("media_portugues").innerText = data.media_portugues.toFixed(2) + "%";
@@ -303,7 +400,10 @@
             window.location.href = `/casa_avaliacao.html?cpf=${cpfValido}`;
         }
 
-        window.onload = inicializar;
+        window.onload = async function() {
+            await inicializar();
+            await carregarResultados(); // Chama após inicializar
+        };
     </script>
 </body>
 </html>
