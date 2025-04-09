@@ -118,22 +118,6 @@
             align-items: flex-start; /* Alinha labels e campos à esquerda */
         }
 
-        /* Campos do formulário */
-        input[type="text"],
-        input[type="file"],
-        select,
-        textarea {
-            margin: 5px 0 0 0; /* Margem apenas em cima para alinhar com label */
-            padding: 5px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        textarea {
-            height: 100px;
-            resize: vertical;
-        }
-
         /* Estilo dos botões ajustado para .btn-primary */
         .btn-primary {
             margin: 10px auto; /* Centraliza horizontalmente */
@@ -177,19 +161,54 @@
             max-width: 400px;
         }
 
+        /* Ajuste para campos */
+        .form-control, .form-select {
+            margin: 5px 0 0 0; /* Margem apenas em cima para alinhar com label */
+            width: 100%;
+            max-width: 400px;
+            display: block; /* Garante que sejam blocos centralizados */
+        }
+
+        /* Ajuste específico para textareas */
+        .form-control.textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        /* Ajuste para o input-group (usado apenas onde já havia labels estilizados) */
+        .input-group {
+            margin: 5px 0 0 0;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            align-items: stretch; /* Garante que os elementos se alinhem corretamente */
+        }
+
+        /* Estilo para o input-group-text */
+        .input-group-text {
+            flex: 0 0 100px; /* Largura fixa para labels, como resolvemos antes */
+            text-align: center;
+            padding: 0.375rem 0.75rem; /* Padding padrão do Bootstrap */
+        }
+
+        /* Estilo para o form-select dentro de input-group */
+        .input-group .form-select {
+            flex: 1; /* Ocupa o espaço restante */
+            min-width: 0; /* Evita que o select "engula" o label */
+            margin: 0; /* Remove margem extra */
+        }
+
         /* Media queries para responsividade */
         @media (max-width: 768px) {
             .content {
                 padding: 0 10px;
             }
-            input[type="text"],
-            input[type="file"],
-            select,
-            textarea,
             .btn-primary,
             .dados-questao,
-            .form-label,
-            .form-group {
+            .form-group,
+            .form-control,
+            .form-select,
+            .input-group {
                 max-width: 100%;
             }
         }
@@ -198,15 +217,14 @@
             .content {
                 margin-top: 30px;
             }
-            input[type="text"],
-            input[type="file"],
-            select,
-            textarea,
             .btn-primary,
-            .form-label {
+            .form-control,
+            .form-select,
+            .input-group {
                 margin: 5px 0;
             }
         }
+SDA
     </style>
 </head>
 
@@ -217,7 +235,7 @@
             <header class="pb-3 mb-4 border-bottom">
                 <a href="/" class="d-flex align-items-center text-body-emphasis text-decoration-none">
                     <img src="/static/logo2.png" alt="Logo" class="me-2 header-img">
-                    <span class="fs-4 montserrat-bold">Sistema de Avaliações Externas - Digital</span>
+                    <span class="fs-4 montserrat-bold">Sistema de Avaliação Virtual</span>
                     <img src="/static/logo1.png" alt="Outra Imagem" class="ms-auto header-img-secondary">
                 </a>
             </header>
@@ -227,64 +245,81 @@
                     <label class="montserrat-bold">Criar Prova</label>
                 </div>
                 <form id="formQuestao" enctype="multipart/form-data">
+                    <!-- Select "Etapa da questão" estilizado -->
                     <div class="form-group">
-                        <label for="etapa" class="form-label">Etapa da questão:</label>
-                        <select id="etapa" name="etapa">
-                            <option value="6º Ano">6º Ano</option>
-                            <option value="7º Ano">7º Ano</option>
-                            <option value="8º Ano">8º Ano</option>
-                            <option value="9º Ano">9º Ano</option>
-                        </select>
+                        <div class="input-group">
+                            <label class="input-group-text" for="etapa">Etapa</label>
+                            <select id="etapa" name="etapa" class="form-select">
+                                <option selected disabled value="">Escolha...</option>
+                                <option value="6º Ano">6º Ano</option>
+                                <option value="7º Ano">7º Ano</option>
+                                <option value="8º Ano">8º Ano</option>
+                                <option value="9º Ano">9º Ano</option>
+                            </select>
+                        </div>
                     </div>
 
+                    <!-- Select "Disciplina" estilizado -->
                     <div class="form-group">
-                        <label for="disciplina" class="form-label">Disciplina:</label>
-                        <select id="disciplina" name="disciplina"></select>
+                        <div class="input-group">
+                            <label class="input-group-text" for="disciplina">Disciplina</label>
+                            <select id="disciplina" name="disciplina" class="form-select">
+                                <option selected disabled value="">Escolha...</option>
+                            </select>
+                        </div>
                     </div>
 
+                    <!-- Seção "Dados da questão" -->
                     <div class="dados-questao">
-                        <label class="form-label">Dados da questão:</label>
-                        <input type="text" id="nome_avaliacao" name="nome_avaliacao" placeholder="Nome da Avaliação">
-                        <select id="nivel_dificuldade" name="nivel_dificuldade">
-                            <option value="Fácil">Fácil</option>
-                            <option value="Médio">Médio</option>
-                            <option value="Difícil">Difícil</option>
-                        </select>
-                        <input type="text" id="descritor" name="descritor" placeholder="Descritor (ex.: D1)">
-                        <input type="text" id="habilidade" name="habilidade" placeholder="Habilidade (ex.: H1)">
-                        <input type="text" id="autor" name="autor" placeholder="Autor">
+                        <input type="text" id="nome_avaliacao" name="nome_avaliacao" class="form-control" placeholder="Nome da Avaliação">
+                        <!-- Select "Nível de Dificuldade" estilizado -->
+                        <div class="input-group">
+                            <label class="input-group-text" for="nivel_dificuldade">Dificuldade</label>
+                            <select id="nivel_dificuldade" name="nivel_dificuldade" class="form-select">
+                                <option selected disabled value="">Escolha...</option>
+                                <option value="Fácil">Fácil</option>
+                                <option value="Médio">Médio</option>
+                                <option value="Difícil">Difícil</option>
+                            </select>
+                        </div>
+                        <input type="text" id="descritor" name="descritor" class="form-control" placeholder="Descritor (ex.: D1)">
+                        <input type="text" id="habilidade" name="habilidade" class="form-control" placeholder="Habilidade (ex.: H1)">
+                        <input type="text" id="autor" name="autor" class="form-control" placeholder="Autor">
                     </div>
 
                     <div class="form-group">
                         <label for="pergunta" class="form-label">Questão:</label>
-                        <textarea id="pergunta" name="pergunta" placeholder="Digite a pergunta"></textarea>
+                        <textarea id="pergunta" name="pergunta" class="form-control textarea" placeholder="Digite a pergunta"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <textarea id="pergunta_complementar" name="pergunta_complementar" placeholder="Pergunta complementar (opcional)"></textarea>
+                        <textarea id="pergunta_complementar" name="pergunta_complementar" class="form-control textarea" placeholder="Pergunta complementar (opcional)"></textarea>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group mb-3">
                         <label for="imagem" class="form-label">Adicione a imagem da questão se tiver (opcional):</label>
-                        <input type="file" id="imagem" name="imagem" accept="image/*">
+                        <input type="file" id="imagem" name="imagem" class="form-control" accept="image/*">
                     </div>
 
                     <div class="form-group">
                         <label for="opcao_a" class="form-label">Respostas:</label>
-                        <input type="text" id="opcao_a" name="opcao_a" placeholder="Opção A">
-                        <input type="text" id="opcao_b" name="opcao_b" placeholder="Opção B">
-                        <input type="text" id="opcao_c" name="opcao_c" placeholder="Opção C">
-                        <input type="text" id="opcao_d" name="opcao_d" placeholder="Opção D">
+                        <input type="text" id="opcao_a" name="opcao_a" class="form-control" placeholder="Opção A">
+                        <input type="text" id="opcao_b" name="opcao_b" class="form-control" placeholder="Opção B">
+                        <input type="text" id="opcao_c" name="opcao_c" class="form-control" placeholder="Opção C">
+                        <input type="text" id="opcao_d" name="opcao_d" class="form-control" placeholder="Opção D">
                     </div>
 
-                    <div class="form-group">
-                        <label for="resposta_correta" class="form-label">Resposta correta:</label>
-                        <select id="resposta_correta" name="resposta_correta">
-                            <option value="a">A</option>
-                            <option value="b">B</option>
-                            <option value="c">C</option>
-                            <option value="d">D</option>
-                        </select>
+                    <div class="form-group mb-3">
+                        <div class="input-group">
+                            <label class="input-group-text" for="resposta_correta">Gabarito</label>
+                            <select class="form-select" id="resposta_correta" name="resposta_correta">
+                                <option selected disabled value="">Escolha...</option>
+                                <option value="a">A</option>
+                                <option value="b">B</option>
+                                <option value="c">C</option>
+                                <option value="d">D</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button class="btn btn-primary" type="button" onclick="salvarQuestao()">Salvar Questão</button>
@@ -319,6 +354,12 @@
                 if (data.status === "success") {
                     const disciplinaSelect = document.getElementById("disciplina");
                     disciplinaSelect.innerHTML = "";
+                    const placeholder = document.createElement("option");
+                    placeholder.value = "";
+                    placeholder.text = "Escolha...";
+                    placeholder.selected = true;
+                    placeholder.disabled = true;
+                    disciplinaSelect.appendChild(placeholder);
                     data.disciplinas.split(',').forEach(disciplina => {
                         const option = document.createElement("option");
                         option.value = disciplina.trim();
