@@ -89,12 +89,11 @@
         /* Conteúdo */
         .content { 
             margin-top: 60px; 
-            margin-left: 150px; 
-            margin-right: 350px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            max-width: 600px; 
+            width: 100%; 
+            max-width: 1200px; /* Aumentado para aproveitar mais espaço */
         }
 
         /* Estilo dos botões ajustado para .btn-primary */
@@ -113,33 +112,207 @@
         /* Estilo da lista de avaliações */
         .avaliacao-lista { 
             margin: 20px 0; 
-            text-align: left; 
             width: 100%; 
         }
 
-        .avaliacao-lista button { 
-            display: inline-block; 
-            width: auto; 
-            min-width: 150px; 
-            margin: 5px 0; 
-            padding: 10px 15px; 
-            background-color: #f0f0f0; 
-            border: 1px solid #ccc; 
-            cursor: pointer; 
-            text-align: center; 
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
-        }
-
-        .avaliacao-lista button:hover { 
-            background-color: #e0e0e0; 
-        }
-
-        #prova { 
+        #prova, #formulario { 
             display: none; 
             text-align: left; 
             width: 100%; 
+        }
+
+        /* Estilo para os cards */
+        .card {
+            border: 1px solid rgba(0, 0, 0, 0.125);
+            border-radius: 0.25rem;
+            flex: 1 1 300px; /* Flex para distribuir os cards igualmente */
+            max-width: 350px; /* Limite máximo para cada card */
+        }
+
+        .card-img-top {
+            max-height: 200px;
+            object-fit: contain;
+        }
+
+        .card-footer {
+            background-color: #f8f9fa;
+        }
+
+        /* Ajuste para o card-group */
+        .card-group {
+            display: flex;
+            flex-wrap: wrap; /* Permite que os cards quebrem em linhas */
+            justify-content: center; /* Centraliza os cards horizontalmente */
+            width: 100%;
+            margin: 0; /* Remove qualquer margem do card-group */
+        }
+
+        /* Remove as margens internas dos cards dentro do card-group */
+        .card-group > .card {
+            margin: 0; /* Remove margens para colar os cards */
+            border-radius: 0; /* Remove bordas arredondadas nas laterais */
+        }
+
+        /* Ajusta as bordas para que os cards colados tenham bordas consistentes */
+        .card-group > .card:not(:first-child) {
+            border-left: 0; /* Remove a borda esquerda dos cards, exceto o primeiro */
+        }
+
+        /* Garante que o primeiro e último card tenham bordas arredondadas nas extremidades */
+        .card-group > .card:first-child {
+            border-top-left-radius: 0.25rem;
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .card-group > .card:last-child {
+            border-top-right-radius: 0.25rem;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        /* Estilo para o formulário de edição */
+        .form-group {
+            margin: 10px auto;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start; /* Alinha labels e campos à esquerda */
+            position: relative; /* Necessário para tooltips */
+        }
+
+        .erro {
+            color: red;
+            display: none;
+        }
+
+        /* Grupo de campos destacados */
+        .dados-questao {
+            background-color: rgba(127, 255, 212, 0.2); /* Verde-água claro com opacidade */
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px auto; /* Centraliza horizontalmente */
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centraliza os campos dentro do grupo */
+        }
+
+        /* Estilização das labels com Bootstrap */
+        .form-label {
+            font-size: 0.9rem;
+            text-align: left;
+            margin-bottom: 0;
+            color: #555;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* Ajuste para campos */
+        .form-control, .form-select {
+            margin: 5px 0 0 0; /* Margem apenas em cima para alinhar com label */
+            width: 100%;
+            max-width: 400px;
+            display: block; /* Garante que sejam blocos centralizados */
+        }
+
+        /* Ajuste específico para textareas */
+        .form-control.textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        /* Ajuste para o input-group */
+        .input-group {
+            margin: 5px 0 0 0;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            align-items: stretch; /* Garante que os elementos se alinhem corretamente */
+        }
+
+        /* Estilo para o input-group-text */
+        .input-group-text {
+            flex: 0 0 100px; /* Largura fixa para labels */
+            text-align: center;
+            padding: 0.375rem 0.75rem; /* Padding padrão do Bootstrap */
+        }
+
+        /* Estilo para o form-select dentro de input-group */
+        .input-group .form-select {
+            flex: 1; /* Ocupa o espaço restante */
+            min-width: 0; /* Evita que o select "engula" o label */
+            margin: 0; /* Remove margem extra */
+        }
+
+        /* Centralizar o label "Editar Questão" */
+        .criar-label {
+            margin: 0 auto 40px auto; /* Centraliza a div */
+            max-width: 400px; /* Mesma largura máxima dos outros elementos do formulário */
+            width: 100%; /* Garante que a div ocupe toda a largura disponível até o limite */
+            text-align: center; /* Centraliza o conteúdo interno */
+        }
+
+        .criar-label .montserrat-bold {
+            display: block; /* Garante que o label seja um bloco */
+            width: 100%; /* Ocupa toda a largura da div pai */
+            text-align: center; /* Centraliza o texto */
+            margin: 0; /* Remove qualquer margem que possa interferir */
+        }
+
+        /* Centralizar os botões "Salvar Alterações" e "Cancelar" */
+        .form-buttons {
+            display: flex;
+            justify-content: center; /* Centraliza os botões horizontalmente */
+            gap: 10px; /* Espaço entre os botões */
+            margin: 20px auto; /* Centraliza a div dos botões */
+            width: 100%;
+            max-width: 400px; /* Mesma largura máxima dos outros elementos do formulário */
+        }
+
+        /* Ajuste para os botões dentro de form-buttons */
+        .form-buttons .btn-primary {
+            width: auto; /* Remove a largura fixa para os botões */
+            min-width: 150px; /* Garante que os botões tenham um tamanho mínimo */
+        }
+
+        /* Media queries para responsividade */
+        @media (max-width: 768px) {
+            .content {
+                padding: 0 10px;
+            }
+            .btn-primary,
+            .dados-questao,
+            .form-group,
+            .form-control,
+            .form-select,
+            .input-group,
+            .criar-label,
+            .form-buttons {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .content {
+                margin-top: 30px;
+            }
+            .btn-primary,
+            .form-control,
+            .form-select,
+            .input-group,
+            .criar-label,
+            .form-buttons {
+                margin: 5px 0;
+            }
+            .form-buttons {
+                flex-direction: column; /* Empilha os botões em telas pequenas */
+                gap: 5px;
+            }
+            .form-buttons .btn-primary {
+                width: 100%; /* Faz os botões ocuparem toda a largura em telas pequenas */
+                max-width: 300px;
+            }
         }
     </style>
 </head>
@@ -161,6 +334,145 @@
                 </div>
                 <div class="avaliacao-lista" id="avaliacaoLista"></div>
                 <div id="prova"></div>
+                <div id="formulario" style="display: none;">
+                    <div class="criar-label">
+                        <label class="montserrat-bold">Editar Questão</label>
+                    </div>
+                    <form id="formQuestao" class="needs-validation" enctype="multipart/form-data" novalidate>
+                        <!-- Select "Etapa da questão" estilizado -->
+                        <div class="form-group position-relative">
+                            <div class="input-group has-validation">
+                                <label class="input-group-text" for="etapa">Etapa</label>
+                                <select id="etapa" name="etapa" class="form-select" required>
+                                    <option value="" disabled selected>Escolha...</option>
+                                    <option value="6º Ano">6º Ano</option>
+                                    <option value="7º Ano">7º Ano</option>
+                                    <option value="8º Ano">8º Ano</option>
+                                    <option value="9º Ano">9º Ano</option>
+                                </select>
+                                <div class="invalid-tooltip">
+                                    Por favor, selecione uma etapa válida.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Select "Disciplina" estilizado -->
+                        <div class="form-group position-relative">
+                            <div class="input-group has-validation">
+                                <label class="input-group-text" for="disciplina">Disciplina</label>
+                                <select id="disciplina" name="disciplina" class="form-select" required>
+                                    <option value="" disabled selected>Escolha...</option>
+                                </select>
+                                <div class="invalid-tooltip">
+                                    Por favor, selecione uma disciplina válida.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção "Dados da questão" -->
+                        <div class="dados-questao">
+                            <div class="form-group position-relative">
+                                <input type="text" id="nome_avaliacao" name="nome_avaliacao" class="form-control" placeholder="Nome da Avaliação" required>
+                                <div class="invalid-tooltip">
+                                    Por favor, forneça um nome para a avaliação.
+                                </div>
+                            </div>
+                            <!-- Select "Nível de Dificuldade" estilizado -->
+                            <div class="form-group position-relative">
+                                <div class="input-group has-validation">
+                                    <label class="input-group-text" for="nivel_dificuldade">Dificuldade</label>
+                                    <select id="nivel_dificuldade" name="nivel_dificuldade" class="form-select" required>
+                                        <option value="" disabled selected>Escolha...</option>
+                                        <option value="Fácil">Fácil</option>
+                                        <option value="Médio">Médio</option>
+                                        <option value="Difícil">Difícil</option>
+                                    </select>
+                                    <div class="invalid-tooltip">
+                                        Por favor, selecione um nível de dificuldade.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group position-relative">
+                                <input type="text" id="descritor" name="descritor" class="form-control" placeholder="Descritor (ex.: D1)" required>
+                                <div class="invalid-tooltip">
+                                    Por favor, forneça um descritor válido.
+                                </div>
+                            </div>
+                            <div class="form-group position-relative">
+                                <input type="text" id="habilidade" name="habilidade" class="form-control" placeholder="Habilidade (ex.: H1)" required>
+                                <div class="invalid-tooltip">
+                                    Por favor, forneça uma habilidade válida.
+                                </div>
+                            </div>
+                            <div class="form-group position-relative">
+                                <input type="text" id="autor" name="autor" class="form-control" placeholder="Autor" required>
+                                <div class="invalid-tooltip">
+                                    Por favor, forneça o nome do autor.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group position-relative">
+                            <label for="pergunta" class="form-label">Questão:</label>
+                            <textarea id="pergunta" name="pergunta" class="form-control textarea" placeholder="Digite a pergunta" required></textarea>
+                            <div class="invalid-tooltip">
+                                Por favor, digite a pergunta da questão.
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="pergunta_complementar" class="form-label">Pergunta complementar (opcional):</label>
+                            <textarea id="pergunta_complementar" name="pergunta_complementar" class="form-control textarea" placeholder="Pergunta complementar (opcional)"></textarea>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="imagem" class="form-label">Adicione a imagem da questão se tiver (opcional):</label>
+                            <input type="file" id="imagem" name="imagem" class="form-control" accept="image/*">
+                        </div>
+
+                        <div class="form-group position-relative">
+                            <label for="opcao_a" class="form-label">Respostas:</label>
+                            <input type="text" id="opcao_a" name="opcao_a" class="form-control" placeholder="Opção A" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça a Opção A.
+                            </div>
+                            <input type="text" id="opcao_b" name="opcao_b" class="form-control" placeholder="Opção B" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça a Opção B.
+                            </div>
+                            <input type="text" id="opcao_c" name="opcao_c" class="form-control" placeholder="Opção C" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça a Opção C.
+                            </div>
+                            <input type="text" id="opcao_d" name="opcao_d" class="form-control" placeholder="Opção D" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça a Opção D.
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3 position-relative">
+                            <div class="input-group has-validation">
+                                <label class="input-group-text" for="resposta_correta">Gabarito</label>
+                                <select class="form-select" id="resposta_correta" name="resposta_correta" required>
+                                    <option value="" disabled selected>Escolha...</option>
+                                    <option value="a">A</option>
+                                    <option value="b">B</option>
+                                    <option value="c">C</option>
+                                    <option value="d">D</option>
+                                </select>
+                                <div class="invalid-tooltip">
+                                    Por favor, selecione a resposta correta.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botões centralizados -->
+                        <div class="form-buttons">
+                            <button class="btn btn-primary" type="submit">Salvar Alterações</button>
+                            <button class="btn btn-primary" type="button" onclick="cancelarEdicao()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
                 <button class="btn btn-primary" onclick="window.location.href='/escolha_avaliacao_casa.html?cpf=' + urlParams.get('cpf')">Voltar</button>
             </div>
         </div>
@@ -172,10 +484,11 @@
     <script>
         let questoes = [];
         let questaoAtual = 0;
+        let questaoEditandoId = null; // Armazena o ID da questão sendo editada
         const urlParams = new URLSearchParams(window.location.search);
         const cpf = urlParams.get("cpf");
 
-        async function carregarListaAvaliacoes() {
+        async function carregarAvaliacoesComoCards() {
             if (!cpf) {
                 document.getElementById("avaliacaoLista").innerHTML = "<p>CPF não fornecido. Volte à página anterior.</p>";
                 return;
@@ -189,35 +502,47 @@
                 if (data.avaliacoes.length === 0) {
                     listaDiv.innerHTML = "<p>Nenhuma avaliação disponível para suas etapas.</p>";
                 } else {
-                    let html = "<h2>Selecione uma Avaliação</h2>";
-                    data.avaliacoes.forEach(avaliacao => {
+                    let html = '<div class="card-group">';
+                    let globalIndex = 0; // Índice global para exibição
+                    for (const avaliacao of data.avaliacoes) {
                         const [nome_avaliacao, etapa] = avaliacao.split(" - ");
-                        html += `<button onclick="carregarAvaliacao('${nome_avaliacao}', '${etapa}')">${avaliacao}</button>`;
-                    });
-                    listaDiv.innerHTML = html;
+                        const questoesResponse = await fetch(`/carregar_avaliacao_completa?etapa=${etapa}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`);
+                        const questoesAvaliacao = await questoesResponse.json();
+
+                        if (questoesAvaliacao.length > 0) {
+                            questoes = questoes.concat(questoesAvaliacao);
+                            questoesAvaliacao.forEach((questao, indice) => {
+                                const imagemHtml = questao.imagem 
+                                    ? `<img src="${questao.imagem}" class="card-img-top" alt="Imagem da questão" onerror="this.src='https://via.placeholder.com/300x200?text=Imagem+Não+Carregada';">`
+                                    : `<img src="https://via.placeholder.com/300x200?text=Sem+Imagem" class="card-img-top" alt="Sem imagem">`;
+
+                                html += `
+                                    <div class="card">
+                                        ${imagemHtml}
+                                        <div class="card-body">
+                                            <h5 class="card-title">Questão ${globalIndex + 1} - ${nome_avaliacao} (Etapa ${etapa})</h5>
+                                            <p class="card-text">${questao.pergunta}</p>
+                                        </div>
+                                        <div class="card-footer d-flex justify-content-center">
+                                            <button class="btn btn-primary me-2" onclick="mostrarQuestao(${globalIndex})">Ver</button>
+                                            <button class="btn btn-primary" onclick="editarQuestao(${globalIndex}, ${questao.id})">Editar</button>
+                                        </div>
+                                    </div>
+                                `;
+                                globalIndex++;
+                            });
+                        }
+                    }
+                    html += '</div>';
+                    if (html === '<div class="card-group"></div>') {
+                        listaDiv.innerHTML = "<p>Nenhuma questão cadastrada para as avaliações disponíveis.</p>";
+                    } else {
+                        listaDiv.innerHTML = html;
+                    }
                 }
             } catch (error) {
                 console.error("Erro:", error);
-                alert("Erro ao carregar a lista de avaliações.");
-            }
-        }
-
-        async function carregarAvaliacao(nome_avaliacao, etapa) {
-            try {
-                const response = await fetch(`/carregar_avaliacao_completa?etapa=${etapa}&nome_avaliacao=${encodeURIComponent(nome_avaliacao)}`);
-                questoes = await response.json();
-
-                if (questoes.length === 0) {
-                    document.getElementById("prova").innerHTML = "<p>Nenhuma questão cadastrada para esta avaliação e etapa.</p>";
-                } else {
-                    document.getElementById("avaliacaoLista").style.display = "none";
-                    document.getElementById("prova").style.display = "block";
-                    questaoAtual = 0;
-                    mostrarQuestao(questaoAtual);
-                }
-            } catch (error) {
-                console.error("Erro:", error);
-                alert("Erro ao carregar a avaliação.");
+                alert("Erro ao carregar as avaliações.");
             }
         }
 
@@ -238,7 +563,159 @@
                 <p><strong>Resposta correta:</strong> ${questao.resposta_correta.toUpperCase()}</p>
                 <button class="btn btn-primary" onclick="anteriorQuestao()" ${indice === 0 ? 'disabled' : ''}>Anterior</button>
                 <button class="btn btn-primary" onclick="proximaQuestao()" ${indice === questoes.length - 1 ? 'disabled' : ''}>Próxima</button>
+                <button class="btn btn-primary" onclick="voltarParaLista()">Voltar à Lista</button>
             `;
+            document.getElementById("avaliacaoLista").style.display = "none";
+            document.getElementById("formulario").style.display = "none";
+            document.getElementById("prova").style.display = "block";
+            questaoAtual = indice;
+        }
+
+        function editarQuestao(indice, questaoId) {
+            questaoEditandoId = questaoId; // Armazena o ID da questão
+            const questao = questoes[indice];
+
+            // Preenche o formulário com os dados da questão
+            const etapaSelect = document.getElementById("etapa");
+            etapaSelect.value = questao.etapa || "";
+
+            const disciplinaSelect = document.getElementById("disciplina");
+            disciplinaSelect.value = questao.disciplina || "";
+
+            document.getElementById("nome_avaliacao").value = questao.nome_avaliacao || "";
+            
+            const nivelDificuldadeSelect = document.getElementById("nivel_dificuldade");
+            nivelDificuldadeSelect.value = questao.nivel_dificuldade || "";
+            
+            document.getElementById("descritor").value = questao.descritor || "";
+            document.getElementById("habilidade").value = questao.habilidade || "";
+            document.getElementById("autor").value = questao.autor || "";
+            document.getElementById("pergunta").value = questao.pergunta || "";
+            document.getElementById("pergunta_complementar").value = questao.pergunta_complementar || "";
+            document.getElementById("opcao_a").value = questao.opcao_a || "";
+            document.getElementById("opcao_b").value = questao.opcao_b || "";
+            document.getElementById("opcao_c").value = questao.opcao_c || "";
+            document.getElementById("opcao_d").value = questao.opcao_d || "";
+            
+            const respostaCorretaSelect = document.getElementById("resposta_correta");
+            respostaCorretaSelect.value = questao.resposta_correta || "";
+
+            // Carrega as disciplinas disponíveis
+            carregarDisciplinas();
+
+            // Exibe o formulário e oculta a lista
+            document.getElementById("avaliacaoLista").style.display = "none";
+            document.getElementById("prova").style.display = "none";
+            document.getElementById("formulario").style.display = "block";
+        }
+
+        async function carregarDisciplinas() {
+            try {
+                const response = await fetch("/verificar_cpf_casa", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cpf: cpf })
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    const disciplinaSelect = document.getElementById("disciplina");
+                    disciplinaSelect.innerHTML = "";
+                    const placeholder = document.createElement("option");
+                    placeholder.value = "";
+                    placeholder.text = "Escolha...";
+                    placeholder.disabled = true;
+                    placeholder.selected = true;
+                    disciplinaSelect.appendChild(placeholder);
+                    data.disciplinas.split(',').forEach(disciplina => {
+                        const option = document.createElement("option");
+                        option.value = disciplina.trim();
+                        option.text = disciplina.trim();
+                        disciplinaSelect.appendChild(option);
+                    });
+                    // Define o valor da disciplina da questão sendo editada
+                    const questao = questoes.find(q => q.id === questaoEditandoId);
+                    if (questao && questao.disciplina) {
+                        disciplinaSelect.value = questao.disciplina;
+                    }
+                } else {
+                    alert("CPF inválido ou sem permissão. Redirecionando para login.");
+                    window.location.href = '/casa_avaliacao.html';
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor. Redirecionando para login.");
+                window.location.href = '/casa_avaliacao.html';
+            }
+        }
+
+        async function salvarEdicao(event) {
+            event.preventDefault();
+
+            const form = document.getElementById("formQuestao");
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                hideTooltipsAfterTimeout(form);
+                return;
+            }
+
+            const formData = new FormData(form);
+            formData.append("id", questaoEditandoId); // Adiciona o ID da questão
+
+            try {
+                const response = await fetch("/editar_questao", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.status === "success") {
+                    alert("Questão editada com sucesso!");
+                    // Atualiza a questão na lista local
+                    const questaoIndex = questoes.findIndex(q => q.id === questaoEditandoId);
+                    if (questaoIndex !== -1) {
+                        const questao = questoes[questaoIndex];
+                        questao.etapa = formData.get("etapa");
+                        questao.disciplina = formData.get("disciplina");
+                        questao.nome_avaliacao = formData.get("nome_avaliacao");
+                        questao.nivel_dificuldade = formData.get("nivel_dificuldade");
+                        questao.descritor = formData.get("descritor");
+                        questao.habilidade = formData.get("habilidade");
+                        questao.autor = formData.get("autor");
+                        questao.pergunta = formData.get("pergunta");
+                        questao.pergunta_complementar = formData.get("pergunta_complementar");
+                        questao.opcao_a = formData.get("opcao_a");
+                        questao.opcao_b = formData.get("opcao_b");
+                        questao.opcao_c = formData.get("opcao_c");
+                        questao.opcao_d = formData.get("opcao_d");
+                        questao.resposta_correta = formData.get("resposta_correta");
+                        if (formData.get("imagem").size > 0) {
+                            questao.imagem = data.imagem_url;
+                        }
+                    }
+                    // Volta para a lista
+                    voltarParaLista();
+                    // Recarrega os cards para refletir as alterações
+                    carregarAvaliacoesComoCards();
+                } else {
+                    alert("Erro ao editar questão: " + data.message);
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
+        }
+
+        function hideTooltipsAfterTimeout(form) {
+            const tooltips = form.querySelectorAll('.invalid-tooltip');
+            tooltips.forEach(tooltip => {
+                tooltip.style.display = 'block';
+                setTimeout(() => {
+                    tooltip.style.display = 'none';
+                }, 3000);
+            });
+        }
+
+        function cancelarEdicao() {
+            voltarParaLista();
         }
 
         function proximaQuestao() {
@@ -255,8 +732,17 @@
             }
         }
 
-        // Carregar as avaliações automaticamente ao carregar a página
-        carregarListaAvaliacoes();
+        function voltarParaLista() {
+            document.getElementById("avaliacaoLista").style.display = "block";
+            document.getElementById("prova").style.display = "none";
+            document.getElementById("formulario").style.display = "none";
+        }
+
+        // Adiciona o evento de submit ao formulário
+        document.getElementById("formQuestao").addEventListener('submit', salvarEdicao);
+
+        // Carregar as avaliações como cards automaticamente ao carregar a página
+        carregarAvaliacoesComoCards();
     </script>
 </body>
 </html>

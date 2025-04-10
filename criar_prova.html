@@ -14,15 +14,6 @@
     <!-- Importando a fonte Montserrat do Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
 
-    <!-- Favicons -->
-    <link rel="apple-touch-icon" href="../assets/img/favicons/apple-touch-icon.png" sizes="180x180">
-    <link rel="icon" href="../assets/img/favicons/favicon-32x32.png" sizes="32x32" type="image/png">
-    <link rel="icon" href="../assets/img/favicons/favicon-16x16.png" sizes="16x16" type="image/png">
-    <link rel="manifest" href="../assets/img/favicons/manifest.json">
-    <link rel="mask-icon" href="../assets/img/favicons/safari-pinned-tab.svg" color="#712cf9">
-    <link rel="icon" href="../assets/img/favicons/favicon.ico">
-    <meta name="theme-color" content="#712cf9">
-
     <style>
         /* Estilo do background responsivo */
         body {
@@ -116,6 +107,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start; /* Alinha labels e campos à esquerda */
+            position: relative; /* Necessário para tooltips */
         }
 
         /* Estilo dos botões ajustado para .btn-primary */
@@ -175,7 +167,7 @@
             resize: vertical;
         }
 
-        /* Ajuste para o input-group (usado apenas onde já havia labels estilizados) */
+        /* Ajuste para o input-group */
         .input-group {
             margin: 5px 0 0 0;
             width: 100%;
@@ -224,7 +216,6 @@
                 margin: 5px 0;
             }
         }
-
     </style>
 </head>
 
@@ -244,55 +235,90 @@
                 <div class="criar-label">
                     <label class="montserrat-bold">Criar Prova</label>
                 </div>
-                <form id="formQuestao" enctype="multipart/form-data">
+                <form id="formQuestao" class="needs-validation" enctype="multipart/form-data" novalidate>
                     <!-- Select "Etapa da questão" estilizado -->
-                    <div class="form-group">
-                        <div class="input-group">
+                    <div class="form-group position-relative">
+                        <div class="input-group has-validation">
                             <label class="input-group-text" for="etapa">Etapa</label>
-                            <select id="etapa" name="etapa" class="form-select">
+                            <select id="etapa" name="etapa" class="form-select" required>
                                 <option selected disabled value="">Escolha...</option>
                                 <option value="6º Ano">6º Ano</option>
                                 <option value="7º Ano">7º Ano</option>
                                 <option value="8º Ano">8º Ano</option>
                                 <option value="9º Ano">9º Ano</option>
                             </select>
+                            <div class="invalid-tooltip">
+                                Por favor, selecione uma etapa válida.
+                            </div>
                         </div>
                     </div>
 
                     <!-- Select "Disciplina" estilizado -->
-                    <div class="form-group">
-                        <div class="input-group">
+                    <div class="form-group position-relative">
+                        <div class="input-group has-validation">
                             <label class="input-group-text" for="disciplina">Disciplina</label>
-                            <select id="disciplina" name="disciplina" class="form-select">
+                            <select id="disciplina" name="disciplina" class="form-select" required>
                                 <option selected disabled value="">Escolha...</option>
                             </select>
+                            <div class="invalid-tooltip">
+                                Por favor, selecione uma disciplina válida.
+                            </div>
                         </div>
                     </div>
 
                     <!-- Seção "Dados da questão" -->
                     <div class="dados-questao">
-                        <input type="text" id="nome_avaliacao" name="nome_avaliacao" class="form-control" placeholder="Nome da Avaliação">
-                        <!-- Select "Nível de Dificuldade" estilizado -->
-                        <div class="input-group">
-                            <label class="input-group-text" for="nivel_dificuldade">Dificuldade</label>
-                            <select id="nivel_dificuldade" name="nivel_dificuldade" class="form-select">
-                                <option selected disabled value="">Escolha...</option>
-                                <option value="Fácil">Fácil</option>
-                                <option value="Médio">Médio</option>
-                                <option value="Difícil">Difícil</option>
-                            </select>
+                        <div class="form-group position-relative">
+                            <input type="text" id="nome_avaliacao" name="nome_avaliacao" class="form-control" placeholder="Nome da Avaliação" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça um nome para a avaliação.
+                            </div>
                         </div>
-                        <input type="text" id="descritor" name="descritor" class="form-control" placeholder="Descritor (ex.: D1)">
-                        <input type="text" id="habilidade" name="habilidade" class="form-control" placeholder="Habilidade (ex.: H1)">
-                        <input type="text" id="autor" name="autor" class="form-control" placeholder="Autor">
+                        <!-- Select "Nível de Dificuldade" estilizado -->
+                        <div class="form-group position-relative">
+                            <div class="input-group has-validation">
+                                <label class="input-group-text" for="nivel_dificuldade">Dificuldade</label>
+                                <select id="nivel_dificuldade" name="nivel_dificuldade" class="form-select" required>
+                                    <option selected disabled value="">Escolha...</option>
+                                    <option value="Fácil">Fácil</option>
+                                    <option value="Médio">Médio</option>
+                                    <option value="Difícil">Difícil</option>
+                                </select>
+                                <div class="invalid-tooltip">
+                                    Por favor, selecione um nível de dificuldade.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group position-relative">
+                            <input type="text" id="descritor" name="descritor" class="form-control" placeholder="Descritor (ex.: D1)" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça um descritor válido.
+                            </div>
+                        </div>
+                        <div class="form-group position-relative">
+                            <input type="text" id="habilidade" name="habilidade" class="form-control" placeholder="Habilidade (ex.: H1)" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça uma habilidade válida.
+                            </div>
+                        </div>
+                        <div class="form-group position-relative">
+                            <input type="text" id="autor" name="autor" class="form-control" placeholder="Autor" required>
+                            <div class="invalid-tooltip">
+                                Por favor, forneça o nome do autor.
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group position-relative">
                         <label for="pergunta" class="form-label">Questão:</label>
-                        <textarea id="pergunta" name="pergunta" class="form-control textarea" placeholder="Digite a pergunta"></textarea>
+                        <textarea id="pergunta" name="pergunta" class="form-control textarea" placeholder="Digite a pergunta" required></textarea>
+                        <div class="invalid-tooltip">
+                            Por favor, digite a pergunta da questão.
+                        </div>
                     </div>
 
                     <div class="form-group">
+                        <label for="pergunta_complementar" class="form-label">Pergunta complementar (opcional):</label>
                         <textarea id="pergunta_complementar" name="pergunta_complementar" class="form-control textarea" placeholder="Pergunta complementar (opcional)"></textarea>
                     </div>
 
@@ -301,28 +327,43 @@
                         <input type="file" id="imagem" name="imagem" class="form-control" accept="image/*">
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group position-relative">
                         <label for="opcao_a" class="form-label">Respostas:</label>
-                        <input type="text" id="opcao_a" name="opcao_a" class="form-control" placeholder="Opção A">
-                        <input type="text" id="opcao_b" name="opcao_b" class="form-control" placeholder="Opção B">
-                        <input type="text" id="opcao_c" name="opcao_c" class="form-control" placeholder="Opção C">
-                        <input type="text" id="opcao_d" name="opcao_d" class="form-control" placeholder="Opção D">
+                        <input type="text" id="opcao_a" name="opcao_a" class="form-control" placeholder="Opção A" required>
+                        <div class="invalid-tooltip">
+                            Por favor, forneça a Opção A.
+                        </div>
+                        <input type="text" id="opcao_b" name="opcao_b" class="form-control" placeholder="Opção B" required>
+                        <div class="invalid-tooltip">
+                            Por favor, forneça a Opção B.
+                        </div>
+                        <input type="text" id="opcao_c" name="opcao_c" class="form-control" placeholder="Opção C" required>
+                        <div class="invalid-tooltip">
+                            Por favor, forneça a Opção C.
+                        </div>
+                        <input type="text" id="opcao_d" name="opcao_d" class="form-control" placeholder="Opção D" required>
+                        <div class="invalid-tooltip">
+                            Por favor, forneça a Opção D.
+                        </div>
                     </div>
 
-                    <div class="form-group mb-3">
-                        <div class="input-group">
+                    <div class="form-group mb-3 position-relative">
+                        <div class="input-group has-validation">
                             <label class="input-group-text" for="resposta_correta">Gabarito</label>
-                            <select class="form-select" id="resposta_correta" name="resposta_correta">
+                            <select class="form-select" id="resposta_correta" name="resposta_correta" required>
                                 <option selected disabled value="">Escolha...</option>
                                 <option value="a">A</option>
                                 <option value="b">B</option>
                                 <option value="c">C</option>
                                 <option value="d">D</option>
                             </select>
+                            <div class="invalid-tooltip">
+                                Por favor, selecione a resposta correta.
+                            </div>
                         </div>
                     </div>
 
-                    <button class="btn btn-primary" type="button" onclick="salvarQuestao()">Salvar Questão</button>
+                    <button class="btn btn-primary" type="submit">Salvar Questão</button>
                 </form>
                 <button class="btn btn-primary" onclick="voltar()">Voltar</button>
             </div>
@@ -332,7 +373,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    <!-- Script original com validação adicionada -->
+    <!-- Script atualizado com validação por tooltips temporários -->
     <script>
         let cpfValido = null;
 
@@ -378,21 +419,25 @@
             }
         }
 
-        async function salvarQuestao() {
-            const form = document.getElementById("formQuestao");
-            const nomeAvaliacao = document.getElementById("nome_avaliacao").value.trim();
-            const descritor = document.getElementById("descritor").value.trim();
-            const habilidade = document.getElementById("habilidade").value.trim();
-            const autor = document.getElementById("autor").value.trim();
-            const pergunta = document.getElementById("pergunta").value.trim();
-            const opcaoA = document.getElementById("opcao_a").value.trim();
-            const opcaoB = document.getElementById("opcao_b").value.trim();
-            const opcaoC = document.getElementById("opcao_c").value.trim();
-            const opcaoD = document.getElementById("opcao_d").value.trim();
+        // Função para ocultar tooltips após um tempo
+        function hideTooltipsAfterTimeout(form) {
+            const tooltips = form.querySelectorAll('.invalid-tooltip');
+            tooltips.forEach(tooltip => {
+                tooltip.style.display = 'block'; // Garante que o tooltip apareça inicialmente
+                setTimeout(() => {
+                    tooltip.style.display = 'none'; // Oculta o tooltip após 3 segundos
+                }, 3000); // 3000ms = 3 segundos
+            });
+        }
 
-            // Validação dos campos obrigatórios
-            if (!nomeAvaliacao || !descritor || !habilidade || !autor || !pergunta || !opcaoA || !opcaoB || !opcaoC || !opcaoD) {
-                alert("Por favor, preencha todos os campos obrigatórios: Nome da Avaliação, Descritor, Habilidade, Autor, Pergunta e todas as Opções.");
+        // Função para validar o formulário e salvar a questão
+        async function salvarQuestao(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+
+            const form = document.getElementById("formQuestao");
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated'); // Ativa a validação do Bootstrap
+                hideTooltipsAfterTimeout(form); // Oculta os tooltips após 3 segundos
                 return;
             }
 
@@ -407,6 +452,7 @@
                 if (data.status === "success") {
                     alert("Questão salva com sucesso!");
                     form.reset();
+                    form.classList.remove('was-validated'); // Reseta a validação após sucesso
                 } else {
                     alert("Erro ao salvar questão: " + data.message);
                 }
@@ -419,6 +465,9 @@
         function voltar() {
             window.location.href = `/casa_avaliacao.html?cpf=${cpfValido}`;
         }
+
+        // Adiciona o evento de submit ao formulário
+        document.getElementById("formQuestao").addEventListener('submit', salvarQuestao);
 
         window.onload = function () {
             carregarDisciplinas();

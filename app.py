@@ -215,10 +215,97 @@ def salvar_questao():
         }
         
         response = supabase.table('questoes').insert(questao).execute()
-        return jsonify({"status": "success", "message": "Questão salva com sucesso"})
+        return jsonify({"status": "success", "message": "Questão salva com sucesso", "imagem_url": imagem_path})
     except Exception as e:
         print(f"Erro ao salvar questão: {str(e)}")
         return jsonify({"status": "error", "message": f"Erro ao salvar questão: {str(e)}"}), 500
+
+@app.route('/editar_questao', methods=['POST'])
+def editar_questao():
+    try:
+        # Recebe os dados do FormData
+        etapa = request.form['etapa']
+        disciplina = request.form['disciplina']
+        nome_avaliacao = request.form['nome_avaliacao']
+        pergunta = request.form['pergunta']
+        pergunta_complementar = request.form.get('pergunta_complementar', '')
+        opcao_a = request.form['opcao_a']
+        opcao_b = request.form['opcao_b']
+        opcao_c = request.form['opcao_c']
+        opcao_d = request.form['opcao_d']
+        resposta_correta = request.form['resposta_correta']
+        nivel_dificuldade = request.form['nivel_dificuldade']
+        descritor = request.form['descritor']
+        habilidade = request.form['habilidade']
+        autor = request.form['autor']
+        questao_id = int(request.form['id'])  # ID da questão
+        imagem = request.files.get('imagem')
+        imagem_path = None
+
+        print(f"Editando questão com ID {questao_id} - Disciplina: {disciplina}, Nível: {nivel_dificuldade}, Descritor: {descritor}, Habilidade: {habilidade}, Autor: {autor}")
+
+        # Busca a questão pelo ID
+        response = supabase.table('questoes').select('id, imagem').eq('id', questao_id).execute()
+        if not response.data:
+            print(f"Questão com ID {questao_id} não encontrada")
+            return jsonify({"status": "error", "message": "Questão não encontrada"}), 404
+        
+        imagem_antiga = response.data[0]['imagem']
+
+        # Se uma nova imagem foi enviada, faz upload e substitui a antiga
+        if imagem:
+            # Remove a imagem antiga do armazenamento, se existir
+            if imagem_antiga:
+                filename_antigo = imagem_antiga.split('/')[-1]
+                try:
+                    supabase.storage.from_('uploads').remove([filename_antigo])
+                except Exception as e:
+                    print(f"Erro ao remover imagem antiga: {str(e)}")
+            
+            # Faz upload da nova imagem
+            temp_dir = 'uploads'
+            if not os.path.exists(temp_dir):
+                os.makedirs(temp_dir)
+            temp_path = os.path.join(temp_dir, imagem.filename)
+            imagem.save(temp_path)
+            with open(temp_path, 'rb') as f:
+                supabase.storage.from_('uploads').upload(imagem.filename, f)
+            os.remove(temp_path)
+            imagem_path = supabase.storage.from_('uploads').get_public_url(imagem.filename)
+
+        # Monta os dados atualizados da questão
+        questao_atualizada = {
+            "etapa": etapa,
+            "disciplina": disciplina,
+            "nome_avaliacao": nome_avaliacao,
+            "identificador": f"{nome_avaliacao} - {disciplina} - {etapa}",
+            "pergunta": pergunta,
+            "pergunta_complementar": pergunta_complementar,
+            "opcao_a": opcao_a,
+            "opcao_b": opcao_b,
+            "opcao_c": opcao_c,
+            "opcao_d": opcao_d,
+            "resposta_correta": resposta_correta,
+            "nivel_dificuldade": nivel_dificuldade,
+            "descritor": descritor,
+            "habilidade": habilidade,
+            "autor": autor,
+        }
+
+        # Atualiza a imagem apenas se uma nova foi enviada
+        if imagem_path:
+            questao_atualizada["imagem"] = imagem_path
+
+        # Atualiza a questão no Supabase
+        response = supabase.table('questoes').update(questao_atualizada).eq('id', questao_id).execute()
+        return jsonify({
+            "status": "success",
+            "message": "Questão atualizada com sucesso",
+            "imagem_url": imagem_path if imagem_path else imagem_antiga
+        })
+    except Exception as e:
+        print(f"Erro ao editar questão: {str(e)}")
+        return jsonify({"status": "error", "message": f"Erro ao editar questão: {str(e)}"}), 500
 
 @app.route('/verificar_cpf_unidade', methods=['POST'])
 def verificar_cpf_unidade():
@@ -488,7 +575,7 @@ def etapas_permitidas():
 def carregar_avaliacao_completa():
     etapa = request.args.get('etapa')
     nome_avaliacao = request.args.get('nome_avaliacao')
-    response = supabase.table('questoes').select('*').eq('etapa', etapa).eq('nome_avaliacao', nome_avaliacao).execute()
+    response = supabase.table('questoes').select('*').eq('etapa', etapa).eq('nome_avaliacao', nome_avaliacao).order('id').execute()
     return jsonify(response.data)
 
 @app.route('/listar_avaliacoes')
@@ -710,6 +797,7 @@ def listar_avaliacoes_restritas():
     response = supabase.table('questoes').select('nome_avaliacao, etapa').in_('etapa', etapas_permitidas).execute()
     avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
     return jsonify({"avaliacoes": avaliacoes})
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, debug=False)
