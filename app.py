@@ -798,6 +798,39 @@ def listar_avaliacoes_restritas():
     avaliacoes = sorted(set(f"{q['nome_avaliacao']} - {q['etapa']}" for q in response.data))
     return jsonify({"avaliacoes": avaliacoes})
 
+@app.route('/deletar_questao', methods=['DELETE'])
+def deletar_questao():
+    try:
+        questao_id = request.args.get('id')
+        if not questao_id:
+            print("Erro: ID da questão não fornecido")
+            return jsonify({"status": "error", "message": "ID da questão não fornecido"}), 400
+
+        # Verifica se a questão existe
+        response = supabase.table('questoes').select('id, imagem').eq('id', int(questao_id)).execute()
+        if not response.data:
+            print(f"Questão com ID {questao_id} não encontrada")
+            return jsonify({"status": "error", "message": "Questão não encontrada"}), 404
+        
+        # Remove a imagem associada, se existir
+        imagem_antiga = response.data[0]['imagem']
+        if imagem_antiga:
+            filename_antigo = imagem_antiga.split('/')[-1]
+            try:
+                supabase.storage.from_('uploads').remove([filename_antigo])
+                print(f"Imagem {filename_antigo} removida do armazenamento")
+            except Exception as e:
+                print(f"Erro ao remover imagem antiga: {str(e)}")
+
+        # Deleta a questão do banco de dados
+        supabase.table('questoes').delete().eq('id', int(questao_id)).execute()
+        print(f"Questão com ID {questao_id} deletada com sucesso")
+        
+        return jsonify({"status": "success", "message": "Questão deletada com sucesso"})
+    except Exception as e:
+        print(f"Erro ao deletar questão: {str(e)}")
+        return jsonify({"status": "error", "message": f"Erro ao deletar questão: {str(e)}"}), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port, debug=False)

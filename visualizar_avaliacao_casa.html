@@ -169,6 +169,11 @@
             border-bottom-right-radius: 0.25rem;
         }
 
+        /* Garante que os botões do btn-group fiquem colados */
+        .btn-group > .btn {
+            margin: 0 !important; /* Remove qualquer margem que possa estar sendo aplicada */
+        }
+
         /* Estilo para o formulário de edição */
         .form-group {
             margin: 10px auto;
@@ -524,8 +529,11 @@
                                             <p class="card-text">${questao.pergunta}</p>
                                         </div>
                                         <div class="card-footer d-flex justify-content-center">
-                                            <button class="btn btn-primary me-2" onclick="mostrarQuestao(${globalIndex})">Ver</button>
-                                            <button class="btn btn-primary" onclick="editarQuestao(${globalIndex}, ${questao.id})">Editar</button>
+                                            <div class="btn-group" role="group" aria-label="Ações da questão">
+                                                <button type="button" class="btn btn-primary" onclick="mostrarQuestao(${globalIndex})">Ver</button>
+                                                <button type="button" class="btn btn-primary" onclick="editarQuestao(${globalIndex}, ${questao.id})">Editar</button>
+                                                <button type="button" class="btn btn-primary" onclick="deletarQuestao(${globalIndex}, ${questao.id})">Deletar</button>
+                                            </div>
                                         </div>
                                     </div>
                                 `;
@@ -607,6 +615,32 @@
             document.getElementById("avaliacaoLista").style.display = "none";
             document.getElementById("prova").style.display = "none";
             document.getElementById("formulario").style.display = "block";
+        }
+
+        async function deletarQuestao(indice, questaoId) {
+            if (!confirm("Tem certeza que deseja deletar esta questão? Essa ação não pode ser desfeita.")) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/deletar_questao?id=${questaoId}`, {
+                    method: "DELETE",
+                });
+                const data = await response.json();
+
+                if (data.status === "success") {
+                    alert("Questão deletada com sucesso!");
+                    // Remove a questão da lista local
+                    questoes.splice(indice, 1);
+                    // Recarrega os cards para refletir a exclusão
+                    carregarAvaliacoesComoCards();
+                } else {
+                    alert("Erro ao deletar questão: " + data.message);
+                }
+            } catch (error) {
+                console.error("Erro:", error);
+                alert("Erro ao conectar ao servidor.");
+            }
         }
 
         async function carregarDisciplinas() {
